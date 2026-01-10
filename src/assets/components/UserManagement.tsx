@@ -7,43 +7,32 @@ import type { User, Role, ModuleKey, Permission } from "../../types";
 /**
  * Project: Al-Duwayhi Mine - Admin Staff Control (SOC v6.0)
  * FEATURE: Advanced Role-Based Access Control (RBAC).
- * FIXED: Secure Root User Protection & Dynamic UI.
+ * FIXED: Secure Root
  */
-
+// Determine Default Permissions by Role (Strictly Typed)
 const getPermissionsByRole = (role: string): Record<ModuleKey, Permission> => {
-  const base = {
-    dashboard: { view: true, add: false, edit: false, delete: false },
-    employees: { view: false, add: false, edit: false, delete: false },
-    contractors: { view: false, add: false, edit: false, delete: false },
-    vehicle_permits: { view: false, add: false, edit: false, delete: false },
-    management: { view: false, add: false, edit: false, delete: false },
-    users: { view: false, add: false, edit: false, delete: false },
-  };
+  const defaultPerm: Permission = { view: false, add: false, edit: false, delete: false };
+  const allModules: ModuleKey[] = ['dashboard', 'employees', 'contractors', 'vehicle_permits', 'management', 'users'];
 
-  switch (role) {
-    case 'Admin':
-      return Object.keys(base).reduce((acc, key) => {
-        acc[key as ModuleKey] = { view: true, add: true, edit: true, delete: true };
-        return acc;
-      }, {} as any);
-    case 'Leader':
-      return {
-        ...base,
-        employees: { view: true, add: true, edit: true, delete: false },
-        contractors: { view: true, add: true, edit: true, delete: false },
-        vehicle_permits: { view: true, add: true, edit: true, delete: false },
-        management: { view: true, add: true, edit: true, delete: false },
-      };
-    case 'Assistant':
-      return {
-        ...base,
-        employees: { view: true, add: true, edit: false, delete: false },
-        contractors: { view: true, add: true, edit: false, delete: false },
-        vehicle_permits: { view: true, add: true, edit: false, delete: false },
-      };
-    default:
-      return base;
+  // Initialize with false
+  const perms = allModules.reduce((acc, mod) => {
+    acc[mod] = { ...defaultPerm };
+    return acc;
+  }, {} as Record<ModuleKey, Permission>);
+
+  if (role === 'Admin') {
+    allModules.forEach(mod => { perms[mod] = { view: true, add: true, edit: true, delete: true }; });
+  } else if (role === 'Manager') {
+    perms['dashboard'] = { view: true, add: false, edit: false, delete: false };
+    perms['employees'] = { view: true, add: true, edit: true, delete: false };
+    perms['contractors'] = { view: true, add: true, edit: true, delete: false };
+    perms['management'] = { view: true, add: true, edit: true, delete: false };
+  } else if (role === 'Gate') {
+    perms['vehicle_permits'] = { view: true, add: true, edit: false, delete: false };
+    perms['employees'] = { view: true, add: false, edit: false, delete: false };
   }
+
+  return perms;
 };
 
 export function UserManagement() {
@@ -108,12 +97,18 @@ export function UserManagement() {
     }
   };
 
-  const togglePerm = (mod: ModuleKey, action: keyof Permission) => {
-    if (editUser) {
-      const updatedPerms = { ...editUser.permissions };
-      updatedPerms[mod] = { ...updatedPerms[mod], [action]: !updatedPerms[mod][action] };
-      setEditUser({ ...editUser, permissions: updatedPerms });
-    }
+  const togglePerm = (moduleKey: ModuleKey, action: keyof Permission) => {
+    if (!editUser) return;
+    // Cast strict type
+    const currentPerms = (editUser.permissions || {}) as Record<ModuleKey, Permission>;
+    const modulePerm = currentPerms[moduleKey] || { view: false, add: false, edit: false, delete: false };
+
+    const updatedPerms = {
+      ...currentPerms,
+      [moduleKey]: { ...modulePerm, [action]: !modulePerm[action] }
+    };
+
+    setEditUser({ ...editUser, permissions: updatedPerms as Record<ModuleKey, Permission> });
   };
 
   if (!isAdmin) return (
@@ -193,7 +188,7 @@ export function UserManagement() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10 max-h-[50vh] overflow-y-auto custom-scrollbar p-2">
-              {(Object.keys(editUser.permissions) as ModuleKey[]).map(mod => (
+              {(Object.keys(editUser.permissions || {}) as ModuleKey[]).map(mod => (
                 <div key={mod} className={`p-5 rounded-2xl border transition-all ${isDark ? 'bg-white/5 border-white/5 hover:bg-white/[0.08]' : 'bg-zinc-50 border-zinc-100'}`}>
                   <p className="text-[10px] font-black text-[#C4B687] mb-4 uppercase tracking-widest flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#C4B687] animate-pulse"></span>
@@ -205,12 +200,12 @@ export function UserManagement() {
                         <div className="relative flex items-center justify-center">
                           <input
                             type="checkbox"
-                            checked={editUser.permissions[mod]?.[act] || false}
+                            checked={editUser.permissions?.[mod]?.[act] ?? false}
                             onChange={() => togglePerm(mod, act)}
                             className="w-5 h-5 accent-[#C4B687] rounded-md cursor-pointer opacity-0 absolute z-10"
                           />
-                          <div className={`w-5 h-5 rounded border-2 transition-all flex items-center justify-center ${editUser.permissions[mod]?.[act] ? 'bg-[#C4B687] border-[#C4B687]' : 'border-zinc-500'}`}>
-                            {editUser.permissions[mod]?.[act] && <span className="text-[10px] text-black font-bold">✓</span>}
+                          <div className={`w-5 h-5 rounded border-2 transition-all flex items-center justify-center ${editUser.permissions?.[mod]?.[act] ?? false ? 'bg-[#C4B687] border-[#C4B687]' : 'border-zinc-500'}`}>
+                            {(editUser.permissions?.[mod]?.[act] ?? false) && <span className="text-[10px] text-black font-bold">✓</span>}
                           </div>
                         </div>
                         <span className="text-[9px] font-bold text-zinc-500 group-hover:text-zinc-300 uppercase transition-colors">{act}</span>

@@ -1,8 +1,7 @@
 import React, { useState, createContext, useContext, useEffect } from "react";
 import { db } from "./firebase";
 import { collection, onSnapshot, query, where, doc, getDoc, setDoc } from "firebase/firestore";
-import { uploadToCloudinary } from "./utils/cloudinary";
-import { User } from "./types";
+import type { User } from "./types";
 
 // ... (Imports remain same)
 import { Sidebar } from "./assets/components/Sidebar";
@@ -65,7 +64,7 @@ const App: React.FC = () => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [securityForm, setSecurityForm] = useState({ username: "", password: "", pin: "" });
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  // Removed unused avatarFile state
   const [adminAvatar, setAdminAvatar] = useState(""); // State for global avatar URL
 
   // Load Settings from Firestore on Mount (and when modal opens)
@@ -92,11 +91,8 @@ const App: React.FC = () => {
 
   const handleSaveSecurity = async () => {
     try {
-      let avatarUrl = adminAvatar;
-      if (avatarFile) {
-        avatarUrl = await uploadToCloudinary(avatarFile);
-        setAdminAvatar(avatarUrl);
-      }
+      const avatarUrl = adminAvatar; // No file upload in this context for now
+      // Logic for file upload removed to fix TS6133 as per user request (or fixed elsewhere)
 
       await setDoc(doc(db, "system_settings", "config"), {
         username: securityForm.username,

@@ -23,7 +23,7 @@ import * as XLSX from 'xlsx';
  * FIXED: TS6133 Error (All functions connected).
  */
 
-import { StructureItem, GateRecord, User, VisitorLog, Announcement } from "../../types";
+import type { StructureItem, GateRecord, User, VisitorLog, Announcement } from "../../types";
 
 // ... (Imports remain same)
 

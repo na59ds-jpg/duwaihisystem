@@ -9,7 +9,7 @@ import { useApp } from "../../App";
  * Features: Multi-collection toggling & attachment inspection.
  */
 
-import { ApprovedRecord } from "../../types";
+import type { ApprovedRecord } from "../../types";
 
 export default function WorkCards() {
   const { theme, language } = useApp();

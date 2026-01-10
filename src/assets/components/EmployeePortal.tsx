@@ -22,7 +22,7 @@ const nationalities = [
 
 const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
-import { StructureItem, RequestData, FormState } from "../../types";
+import type { StructureItem, RequestData, FormState } from "../../types";
 
 export function EmployeePortal() {
   const { user, setUser, theme, language } = useApp();
