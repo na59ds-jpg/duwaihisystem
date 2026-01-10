@@ -13,11 +13,21 @@
   padding: 0;
 }
 
+/* Security Grid Pattern */
+.bg-grid-pattern {
+  background-size: 50px 50px;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+}
+
+
 body {
   margin: 0;
   padding: 0;
   overflow: hidden;
-  background-color: transparent !important; /* للسماح لصورة الخلفية بالظهور */
+  background-color: transparent !important;
+  /* للسماح لصورة الخلفية بالظهور */
   font-family: 'Cairo', sans-serif !important;
   -webkit-font-smoothing: antialiased;
 }
@@ -26,9 +36,11 @@ body {
 .custom-scrollbar::-webkit-scrollbar {
   width: 4px;
 }
+
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: #C4B687;
   border-radius: 10px;
@@ -48,7 +60,11 @@ body {
 }
 
 /* 5. تحسينات النصوص والعناوين (وزن 900 للهيبة) */
-h1, h2, h3, h4, .font-black {
+h1,
+h2,
+h3,
+h4,
+.font-black {
   letter-spacing: -0.02em;
   font-weight: 900 !important;
   font-family: 'Cairo', sans-serif !important;
@@ -56,8 +72,15 @@ h1, h2, h3, h4, .font-black {
 
 /* 6. تأثيرات الأنيميشن (دخول ناعم للواجهات) */
 @keyframes slideUpFade {
-  from { opacity: 0; transform: translateY(15px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-view {
@@ -85,9 +108,15 @@ thead th {
 
 /* 9. ماركي التنبيهات (إذا استخدمناه لاحقاً) */
 @keyframes marquee {
-  0% { transform: translateX(100%); }
-  100% { transform: translateX(-100%); }
+  0% {
+    transform: translateX(100%);
+  }
+
+  100% {
+    transform: translateX(-100%);
+  }
 }
+
 .animate-marquee {
   display: inline-block;
   animation: marquee 30s linear infinite;
@@ -98,6 +127,32 @@ thead th {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* 11. Functional Status Colors (Strict Enforcement) */
+.status-approved,
+.status-success {
+  color: #10B981 !important;
+  /* Green */
+}
+
+.bg-status-approved,
+.bg-status-success {
+  background-color: #10B981 !important;
+  color: white !important;
+}
+
+.status-rejected,
+.status-error {
+  color: #EF4444 !important;
+  /* Red */
+}
+
+.bg-status-rejected,
+.bg-status-error {
+  background-color: #EF4444 !important;
+  color: white !important;
 }
