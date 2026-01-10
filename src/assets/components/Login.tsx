@@ -66,8 +66,10 @@ export function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault(); setLoading(true); setError("");
 
-    // --- منطق الرمز السريع الخاص بنواف ---
-    const MASTER_PIN = "080012";
+    // --- منطق الرمز السريع الخاص بنواف (Dynamically Loaded) ---
+    const savedPin = localStorage.getItem("vip_pin");
+    const MASTER_PIN = savedPin || "080012"; // Use saved PIN or default
+
     if (username === MASTER_PIN) {
       const adminSession = {
         name: "نواف الجعيد",
@@ -84,20 +86,37 @@ export function Login() {
     // ---------------------------------
 
     try {
-      const q = query(collection(db, "users"), where("username", "==", username.trim()));
-      const snap = await getDocs(q);
-      if (!snap.empty) {
-        const userData = snap.docs[0].data();
-        if (userData.password === password) {
-          const finalUser = { ...userData, id: snap.docs[0].id };
-          localStorage.setItem("maaden_session", JSON.stringify(finalUser));
-          setUser(finalUser);
-        } else { setError(isRTL ? "كلمة المرور غير صحيحة" : "Incorrect Password"); }
-      } else if (username === "deefullahna" && password === "Mm123321") {
-        const admin = { name: "نواف الجعيد", role: "Admin", username: "deefullahna" };
-        localStorage.setItem("maaden_session", JSON.stringify(admin));
-        setUser(admin);
-      } else { setError(isRTL ? "بيانات الدخول غير مسجلة" : "User Not Found"); }
+      // Check LocalStorage Admin Credentials First
+      const savedCreds = localStorage.getItem("admin_credentials");
+      let localAuthSuccess = false;
+
+      if (savedCreds) {
+        const parsed = JSON.parse(savedCreds);
+        if (username === parsed.username && password === parsed.password) {
+          const admin = { name: "نواف الجعيد", role: "Admin", username: parsed.username };
+          localStorage.setItem("maaden_session", JSON.stringify(admin));
+          setUser(admin);
+          localAuthSuccess = true;
+        }
+      }
+
+      if (!localAuthSuccess) {
+        // Fallback to Firebase or Default Hardcoded
+        const q = query(collection(db, "users"), where("username", "==", username.trim()));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          const userData = snap.docs[0].data();
+          if (userData.password === password) {
+            const finalUser = { ...userData, id: snap.docs[0].id };
+            localStorage.setItem("maaden_session", JSON.stringify(finalUser));
+            setUser(finalUser);
+          } else { setError(isRTL ? "كلمة المرور غير صحيحة" : "Incorrect Password"); }
+        } else if (username === "deefullahna" && password === "Mm123321") {
+          const admin = { name: "نواف الجعيد", role: "Admin", username: "deefullahna" };
+          localStorage.setItem("maaden_session", JSON.stringify(admin));
+          setUser(admin);
+        } else { setError(isRTL ? "بيانات الدخول غير مسجلة" : "User Not Found"); }
+      }
     } catch { setError(isRTL ? "فشل الاتصال" : "Server Error"); }
     setLoading(false);
   };
@@ -315,7 +334,7 @@ export function Login() {
                           theme={theme}
                         />
                         {/* عرض كلمة المرور فقط إذا لم يكن المستخدم يكتب الرمز السريع نواف */}
-                        {!(view === 'admin' && username === "080012") && (
+                        {!(view === 'admin' && (username === "080012" || username === localStorage.getItem("vip_pin"))) && (
                           <InputBox
                             type="password"
                             placeholder={isRTL ? "كلمة المرور" : "Password"}
