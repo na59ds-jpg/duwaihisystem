@@ -57,7 +57,7 @@ export function Management() {
     else if (activeFilter === "security_control") setActiveSystem("security_control");
     else if (activeFilter === "accounts_audit") setActiveSystem("accounts_audit");
     else if (activeFilter === "communications") setActiveSystem("communications"); // New filter
-    else if (activeFilter === "security_settings") setActiveSystem("security_settings"); // New filter
+
     else setActiveSystem("main");
     setActiveSubView("list");
   }, [activeFilter]);
@@ -210,7 +210,6 @@ export function Management() {
           <AdminCard icon="🏗️" title="إدارة المقاولين" desc="Vendor Management" onClick={() => setActiveSystem('contractors')} theme={theme} />
           <AdminCard icon="🛡️" title="التحكم الأمني" desc="Gate & Field Control" onClick={() => setActiveSystem('security_control')} theme={theme} />
           <AdminCard icon="📢" title="لوحة التنبيهات" desc="Communication Center" onClick={() => setActiveSystem('communications')} theme={theme} />
-          <AdminCard icon="🔐" title="إعدادات الأمان" desc="Security Settings" onClick={() => setActiveSystem('security_settings')} theme={theme} />
           <AdminCard icon="👑" title="رقابة الحسابات" desc="Portal Accounts Audit" onClick={() => setActiveSystem('accounts_audit')} theme={theme} featured />
         </div>
       )}
@@ -333,6 +332,32 @@ export function Management() {
                 </div>
               ))}
             </div>
+
+            {/* New Location for Security Settings */}
+            <div className="md:col-span-2 mt-8 pt-8 border-t border-white/10">
+              <h3 className="text-xl font-[900] text-[#C4B687] mb-6 text-center">{isRTL ? "إعدادات الأمان المتقدمة" : "Advanced Security Settings"}</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Admin Credentials */}
+                <div className={`p-6 rounded-[2rem] border ${isDark ? 'bg-black/20 border-white/5' : 'bg-zinc-50 border-zinc-200'}`}>
+                  <h4 className={`text-sm font-bold mb-4 ${isDark ? 'text-white' : 'text-zinc-900'}`}>{isRTL ? "تحديث بيانات المسؤول" : "Update Admin Credentials"}</h4>
+                  <div className="space-y-3">
+                    <input value={securityForm.username} onChange={e => setSecurityForm({ ...securityForm, username: e.target.value })} placeholder={isRTL ? "اسم المستخدم" : "Username"} className={`w-full p-3 rounded-xl border outline-none font-bold text-sm ${isDark ? 'bg-black border-white/10 text-white' : 'bg-white border-zinc-200'}`} />
+                    <input type="password" value={securityForm.password} onChange={e => setSecurityForm({ ...securityForm, password: e.target.value })} placeholder={isRTL ? "كلمة المرور" : "Password"} className={`w-full p-3 rounded-xl border outline-none font-bold text-sm ${isDark ? 'bg-black border-white/10 text-white' : 'bg-white border-zinc-200'}`} />
+                    <button onClick={handleSaveSecurity} className="w-full py-3 bg-[#C4B687]/20 text-[#C4B687] border border-[#C4B687]/50 rounded-xl font-bold hover:bg-[#C4B687] hover:text-black transition-all text-xs">{isRTL ? "حفظ التغييرات" : "Save Changes"}</button>
+                  </div>
+                </div>
+
+                {/* VIP Access */}
+                <div className={`p-6 rounded-[2rem] border ${isDark ? 'bg-black/20 border-white/5' : 'bg-zinc-50 border-zinc-200'}`}>
+                  <h4 className={`text-sm font-bold mb-4 ${isDark ? 'text-white' : 'text-zinc-900'}`}>{isRTL ? "رمز الدخول السريع (VIP)" : "VIP Quick Access PIN"}</h4>
+                  <div className="space-y-3">
+                    <input type="password" value={securityForm.pin} onChange={e => setSecurityForm({ ...securityForm, pin: e.target.value })} placeholder="******" className={`w-full p-3 rounded-xl border outline-none text-center text-xl tracking-widest font-black ${isDark ? 'bg-black border-white/10 text-white' : 'bg-white border-zinc-200'}`} />
+                    <button onClick={handleSaveSecurity} className="w-full py-3 bg-[#C4B687]/20 text-[#C4B687] border border-[#C4B687]/50 rounded-xl font-bold hover:bg-[#C4B687] hover:text-black transition-all text-xs">{isRTL ? "تحديث الرمز" : "Update PIN"}</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
       )}
@@ -370,52 +395,7 @@ export function Management() {
         </div>
       )}
 
-      {/* 5. إعدادات الأمان (Security Settings) */}
-      {activeSystem === "security_settings" && (
-        <div className={`p-10 rounded-[3.5rem] border shadow-2xl animate-view ${isDark ? 'bg-black/40 border-white/5 shadow-black' : 'bg-white border-zinc-100'}`}>
-          <h3 className="text-2xl font-[900] text-[#C4B687] uppercase tracking-tighter mb-10 text-center">{isRTL ? "إعدادات الأمان والدخول" : "Security & Access Settings"}</h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-4xl mx-auto">
-            <div className="space-y-6 p-8 rounded-[2.5rem] border-2 border-[#C4B687]/20 bg-[#C4B687]/5">
-              <h4 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-zinc-900'}`}>👤 {isRTL ? "بيانات دخول المسؤول" : "Admin Credentials"}</h4>
-              <p className="text-xs opacity-50 font-bold mb-4">{isRTL ? "تحديث اسم المستخدم وكلمة المرور." : "Update local admin username and password."}</p>
-
-              <input
-                value={securityForm.username}
-                onChange={e => setSecurityForm({ ...securityForm, username: e.target.value })}
-                placeholder={isRTL ? "اسم المستخدم الجديد" : "New Username"}
-                className={`w-full p-4 rounded-xl border font-bold outline-none ${isDark ? 'bg-black border-white/10 text-white' : 'bg-white border-zinc-200'}`}
-              />
-              <input
-                type="password"
-                value={securityForm.password}
-                onChange={e => setSecurityForm({ ...securityForm, password: e.target.value })}
-                placeholder={isRTL ? "كلمة المرور الجديدة" : "New Password"}
-                className={`w-full p-4 rounded-xl border font-bold outline-none ${isDark ? 'bg-black border-white/10 text-white' : 'bg-white border-zinc-200'}`}
-              />
-            </div>
-
-            <div className="space-y-6 p-8 rounded-[2.5rem] border-2 border-[#C4B687]/20 bg-[#C4B687]/5">
-              <h4 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-zinc-900'}`}>⚡ {isRTL ? "رمز الدخول السريع (VIP)" : "VIP Quick Access PIN"}</h4>
-              <p className="text-xs opacity-50 font-bold mb-4">{isRTL ? "رمز خاص للدخول الفوري بدون كلمة مرور." : "Private code for instant login without password."}</p>
-
-              <input
-                type="password"
-                value={securityForm.pin}
-                onChange={e => setSecurityForm({ ...securityForm, pin: e.target.value })}
-                placeholder={isRTL ? "الرمز الجديد (مثال: 080012)" : "New VIP PIN (e.g. 080012)"}
-                className={`w-full p-4 rounded-xl border font-bold outline-none text-center text-2xl tracking-[0.5em] ${isDark ? 'bg-black border-white/10 text-white' : 'bg-white border-zinc-200'}`}
-              />
-            </div>
-          </div>
-
-          <div className="mt-12 text-center">
-            <button onClick={handleSaveSecurity} className="px-12 py-5 bg-[#C4B687] text-black rounded-2xl font-[900] shadow-xl hover:scale-105 active:scale-95 transition-all text-lg">
-              {isRTL ? "حفظ الإعدادات الجديدة" : "Save New Settings"}
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* 4. مركز التنبيهات والتعاميم */}
       {activeSystem === "communications" && (
