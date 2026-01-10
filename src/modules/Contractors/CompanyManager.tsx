@@ -1,15 +1,15 @@
 import { useState, useEffect } from "react";
 import { db } from "../../firebase";
-import { 
-  collection, 
-  onSnapshot, 
-  query, 
-  where, 
-  addDoc, 
-  deleteDoc, 
-  doc, 
-  serverTimestamp, 
-  orderBy 
+import {
+  collection,
+  onSnapshot,
+  query,
+  where,
+  addDoc,
+  deleteDoc,
+  doc,
+  serverTimestamp,
+  orderBy
 } from "firebase/firestore";
 import { useApp } from "../../App";
 
@@ -22,7 +22,7 @@ export default function CompanyManager() {
   const { theme, language } = useApp();
   const isDark = theme === 'dark';
   const isRTL = language === 'ar';
-  
+
   const [companies, setCompanies] = useState<any[]>([]);
   const [contractors, setContractors] = useState<any[]>([]);
   const [selectedCompId, setSelectedCompId] = useState<string | null>(null);
@@ -31,8 +31,8 @@ export default function CompanyManager() {
   // 1. جلب شركات المقاولات من الهيكل التنظيمي (النوع: comp)
   useEffect(() => {
     const q = query(
-      collection(db, "structure"), 
-      where("type", "==", "comp"), 
+      collection(db, "structure"),
+      where("type", "==", "comp"),
       orderBy("createdAt", "desc")
     );
     const unsubscribe = onSnapshot(q, (snap) => {
@@ -45,7 +45,7 @@ export default function CompanyManager() {
   useEffect(() => {
     if (selectedCompId) {
       const q = query(
-        collection(db, "contractors"), 
+        collection(db, "contractors"),
         where("companyId", "==", selectedCompId)
       );
       const unsubscribe = onSnapshot(q, (snap) => {
@@ -61,10 +61,10 @@ export default function CompanyManager() {
   const addCompany = async () => {
     if (!newCompName.trim()) return;
     try {
-      await addDoc(collection(db, "structure"), { 
-        name: newCompName.trim(), 
-        type: "comp", 
-        createdAt: serverTimestamp() 
+      await addDoc(collection(db, "structure"), {
+        name: newCompName.trim(),
+        type: "comp",
+        createdAt: serverTimestamp()
       });
       setNewCompName(""); // تصفير الحقل مباشرة
     } catch (error) {
@@ -74,43 +74,42 @@ export default function CompanyManager() {
 
   return (
     <div className="animate-view p-4 space-y-6 font-['Cairo'] relative z-10">
-      
+
       {/* قسم إدارة الشركات */}
       <div className={`p-8 rounded-[2.5rem] border-t-4 border-t-amber-500 shadow-2xl transition-all ${isDark ? 'bg-black/40 border-white/5' : 'bg-white border-zinc-200'}`}>
         <div className="flex justify-between items-center mb-8">
-           <h3 className="text-xl font-black text-amber-500 uppercase tracking-widest">
-             {isRTL ? "إدارة شركات المقاولات" : "Contractor Companies"}
-           </h3>
-           <span className={`text-[10px] font-black opacity-40 tracking-[0.3em] uppercase ${isDark ? 'text-white' : 'text-zinc-900'}`}>Vendor Command Hub</span>
+          <h3 className="text-xl font-black text-amber-500 uppercase tracking-widest">
+            {isRTL ? "إدارة شركات المقاولات" : "Contractor Companies"}
+          </h3>
+          <span className={`text-[10px] font-black opacity-40 tracking-[0.3em] uppercase ${isDark ? 'text-white' : 'text-zinc-900'}`}>Vendor Command Hub</span>
         </div>
 
         {/* نموذج الإضافة السريع */}
         <div className="flex gap-4 mb-8">
-          <input 
-            value={newCompName} 
-            onChange={(e) => setNewCompName(e.target.value)} 
-            placeholder={isRTL ? "أدخل اسم الشركة الجديدة..." : "Enter New Company Name..."} 
-            className={`flex-1 p-5 rounded-2xl border outline-none font-black text-sm text-center transition-all ${isDark ? 'bg-black/60 border-white/10 text-white focus:border-amber-500' : 'bg-zinc-50 border-zinc-200 focus:border-amber-500 text-zinc-900'}`} 
+          <input
+            value={newCompName}
+            onChange={(e) => setNewCompName(e.target.value)}
+            placeholder={isRTL ? "أدخل اسم الشركة الجديدة..." : "Enter New Company Name..."}
+            className={`flex-1 p-5 rounded-2xl border outline-none font-black text-sm text-center transition-all ${isDark ? 'bg-black/60 border-white/10 text-white focus:border-amber-500' : 'bg-zinc-50 border-zinc-200 focus:border-amber-500 text-zinc-900'}`}
           />
-          <button 
-            onClick={addCompany} 
+          <button
+            onClick={addCompany}
             className="bg-amber-500 text-black px-12 rounded-2xl font-black transition-all active:scale-95 shadow-lg shadow-amber-500/20 hover:brightness-110"
-          > 
-            {isRTL ? "إضافة +" : "Add +"} 
+          >
+            {isRTL ? "إضافة +" : "Add +"}
           </button>
         </div>
-        
+
         {/* عرض الشركات كبطاقات ذكية */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {companies.map(c => (
-            <div 
-              key={c.id} 
-              onClick={() => setSelectedCompId(c.id)} 
-              className={`p-5 rounded-2xl border cursor-pointer text-center transition-all duration-300 ${
-                selectedCompId === c.id 
-                ? 'border-amber-500 bg-amber-500/20 scale-105 shadow-xl text-amber-500' 
-                : (isDark ? 'bg-white/5 border-white/5 hover:border-amber-500/40 text-white' : 'bg-zinc-50 border-zinc-100 hover:border-amber-500 text-zinc-700 shadow-sm')
-              }`}
+            <div
+              key={c.id}
+              onClick={() => setSelectedCompId(c.id)}
+              className={`p-5 rounded-2xl border cursor-pointer text-center transition-all duration-300 ${selectedCompId === c.id
+                  ? 'border-amber-500 bg-amber-500/20 scale-105 shadow-xl text-amber-500'
+                  : (isDark ? 'bg-white/5 border-white/5 hover:border-amber-500/40 text-white' : 'bg-zinc-50 border-zinc-100 hover:border-amber-500 text-zinc-700 shadow-sm')
+                }`}
             >
               <span className="font-black text-[10px] uppercase tracking-tighter block truncate">{c.name}</span>
             </div>
@@ -122,24 +121,85 @@ export default function CompanyManager() {
       {selectedCompId && (
         <div className={`rounded-[2.5rem] overflow-hidden animate-view shadow-2xl border-2 transition-all ${isDark ? 'bg-black/40 border-white/5' : 'bg-white border-zinc-100'}`}>
           <div className="p-6 bg-amber-500/5 border-b border-white/5 flex justify-between items-center">
-              <p className="font-black text-xs text-amber-500 uppercase tracking-widest flex items-center gap-2">
-                <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span>
-                {isRTL ? "كشف العمالة المسجلة" : "Enrolled Labor Records"}
-              </p>
-              <button 
-                onClick={() => {
-                  if(window.confirm(isRTL ? "هل أنت متأكد من حذف الشركة؟ (ملاحظة: هذا لن يمسح سجلات العمالة بشكل نهائي)" : "Confirm company deletion?")) {
-                    deleteDoc(doc(db, "structure", selectedCompId));
-                    setSelectedCompId(null);
-                  }
-                }}
-                className="text-red-500 text-[9px] font-black underline uppercase hover:text-red-400 transition-colors"
-              >
-                {isRTL ? "حذف الشركة" : "Delete Company"}
-              </button>
+            <p className="font-black text-xs text-amber-500 uppercase tracking-widest flex items-center gap-2">
+              <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span>
+              {isRTL ? "كشف العمالة المسجلة" : "Enrolled Labor Records"}
+            </p>
+            <button
+              onClick={() => {
+                if (window.confirm(isRTL ? "هل أنت متأكد من حذف الشركة؟ (ملاحظة: هذا لن يمسح سجلات العمالة بشكل نهائي)" : "Confirm company deletion?")) {
+                  deleteDoc(doc(db, "structure", selectedCompId));
+                  setSelectedCompId(null);
+                }
+              }}
+              className="text-red-500 text-[9px] font-black underline uppercase hover:text-red-400 transition-colors"
+            >
+              {isRTL ? "حذف الشركة" : "Delete Company"}
+            </button>
           </div>
-          
+
+          {/* New Contractor Registration Form */}
+          <div className="p-8 border-b border-white/5">
+            <h4 className={`text-sm font-black mb-4 ${isDark ? 'text-white' : 'text-zinc-900'}`}>{isRTL ? "تسجيل عامل جديد / عقد" : "Register New Labor / Contract"}</h4>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <input placeholder={isRTL ? "الاسم الكامل" : "Full Name"} id="cont_name" className={`p-3 rounded-xl border font-bold text-xs outline-none ${isDark ? 'bg-black border-white/10 text-white' : 'bg-white border-zinc-200'}`} />
+              <input placeholder={isRTL ? "المسمى الوظيفي" : "Job Title"} id="cont_job" className={`p-3 rounded-xl border font-bold text-xs outline-none ${isDark ? 'bg-black border-white/10 text-white' : 'bg-white border-zinc-200'}`} />
+              <input placeholder={isRTL ? "رقم الهوية/الإقامة" : "ID / Iqama"} id="cont_id" className={`p-3 rounded-xl border font-bold text-xs outline-none ${isDark ? 'bg-black border-white/10 text-white' : 'bg-white border-zinc-200'}`} />
+              <div className="relative">
+                <input type="file" id="cont_file" accept=".pdf" className="hidden" onChange={(e) => {
+                  const btn = document.getElementById('upload_btn_label');
+                  if (btn) btn.innerText = e.target.files?.[0]?.name || (isRTL ? "رفع عقد العمل (PDF)" : "Upload Contract (PDF)");
+                }} />
+                <label id="upload_btn_label" htmlFor="cont_file" className={`block w-full text-center p-3 rounded-xl border border-dashed cursor-pointer font-bold text-xs transition-all ${isDark ? 'border-amber-500/50 text-amber-500 hover:bg-amber-500/10' : 'border-amber-500 text-amber-500 hover:bg-amber-50'}`}>
+                  {isRTL ? "رفع عقد العمل (PDF) 📄" : "Upload Contract (PDF) 📄"}
+                </label>
+              </div>
+            </div>
+            <button onClick={async () => {
+              const name = (document.getElementById('cont_name') as HTMLInputElement).value;
+              const job = (document.getElementById('cont_job') as HTMLInputElement).value;
+              const idNo = (document.getElementById('cont_id') as HTMLInputElement).value;
+              const fileInput = (document.getElementById('cont_file') as HTMLInputElement);
+              const file = fileInput?.files?.[0];
+
+              if (!name || !job || !idNo || !file) return alert(isRTL ? "جميع الحقول والملف إلزامية" : "All fields and PDF are required");
+
+              try {
+                // Import uploadToCloudinary dynamically or assume it's imported at top
+                const { uploadToCloudinary } = await import('../../utils/cloudinary');
+                const pdfUrl = await uploadToCloudinary(file);
+
+                const { addDoc, collection, serverTimestamp } = await import('firebase/firestore');
+                const { db } = await import('../../firebase');
+
+                await addDoc(collection(db, "contractors"), {
+                  fullName: name,
+                  jobTitle: job,
+                  idNo: idNo,
+                  contractUrl: pdfUrl,
+                  companyId: selectedCompId,
+                  createdAt: serverTimestamp(),
+                  nationality: "N/A"
+                });
+
+                alert(isRTL ? "تم تسجيل العامل والعقد بنجاح ✅" : "Labor & Contract Registered ✅");
+                // Clear inputs
+                (document.getElementById('cont_name') as HTMLInputElement).value = "";
+                (document.getElementById('cont_job') as HTMLInputElement).value = "";
+                (document.getElementById('cont_id') as HTMLInputElement).value = "";
+                fileInput.value = "";
+                const btn = document.getElementById('upload_btn_label');
+                if (btn) btn.innerText = isRTL ? "رفع عقد العمل (PDF) 📄" : "Upload Contract (PDF) 📄";
+
+              } catch (e) {
+                console.error(e);
+                alert("Error uploading");
+              }
+            }} className="mt-4 w-full py-3 bg-amber-500 text-black font-black rounded-xl hover:brightness-110 shadow-lg">{isRTL ? "تسجيل الموظف + العقد" : "Register Employee + Contract"}</button>
+          </div>
+
           <div className="overflow-x-auto">
+
             <table className="w-full text-center">
               <thead className={`text-amber-500 text-[10px] font-black uppercase tracking-widest border-b border-white/5 ${isDark ? 'bg-black/40' : 'bg-zinc-900 text-white'}`}>
                 <tr>
@@ -152,17 +212,17 @@ export default function CompanyManager() {
                 {contractors.length > 0 ? contractors.map(it => (
                   <tr key={it.id} className="hover:bg-amber-500/5 transition-all group">
                     <td className="p-6 text-right px-10">
-                        <p className="font-black text-sm">{it.fullName}</p>
-                        <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-tight">{it.jobTitle} | {it.nationality}</p>
+                      <p className="font-black text-sm">{it.fullName}</p>
+                      <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-tight">{it.jobTitle} | {it.nationality}</p>
                     </td>
                     <td className="p-6 font-black text-amber-500 italic tracking-[0.2em] font-mono text-xs">{it.idNo || it.nationalId}</td>
                     <td className="p-6">
-                      <button 
+                      <button
                         onClick={() => {
-                          if(window.confirm(isRTL ? "إلغاء سجل هذا العامل؟" : "Delete this worker record?")) {
+                          if (window.confirm(isRTL ? "إلغاء سجل هذا العامل؟" : "Delete this worker record?")) {
                             deleteDoc(doc(db, "contractors", it.id));
                           }
-                        }} 
+                        }}
                         className="w-10 h-10 rounded-xl flex items-center justify-center text-red-500/30 hover:text-red-500 hover:bg-red-500/10 transition-all mx-auto"
                       >
                         ✕

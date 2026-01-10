@@ -1,62 +1,145 @@
-// types.ts - الملف الأساسي لتعريفات النظام (النسخة المحدثة لعام 2025)
+export interface StructureItem {
+  id: string;
+  name: string;
+  type: "dept" | "comp";
+}
 
-// اللغات والقوالب المدعومة
-export type Language = "ar" | "en";
-export type Theme = "light" | "dark";
+export interface User {
+  id: string; // Required now
+  name?: string;
+  username?: string;
+  password?: string;
+  role?: string;
+  empId?: string;
+  nationalId?: string;
+  isPersistent?: boolean;
+  canManage?: string[];
+  permissions?: Record<ModuleKey, Permission>;
+  [key: string]: any;
+}
 
-// تعريف هيكل الصلاحيات الرباعي (عرض، إضافة، تعديل، حذف)
-export type Permission = {
+export type Role = "Admin" | "Leader" | "Assistant" | "Custom" | "Employee" | "Gate";
+export type ModuleKey = "dashboard" | "employees" | "contractors" | "vehicle_permits" | "management" | "users";
+
+export interface Permission {
   view: boolean;
   add: boolean;
   edit: boolean;
   delete: boolean;
-};
-
-// مفاتيح الصفحات (Modules) لضمان الربط البرمجي الصحيح
-export type ModuleKey =
-  | "dashboard"        // لوحة التحكم
-  | "employees"        // إدارة الموظفين
-  | "contractors"      // إدارة المقاولين
-  | "vehicle_permits"  // إدارة التصاريح
-  | "management"       // إدارة الهيكل
-  | "users";           // إدارة المستخدمين
-
-// الرتب الوظيفية المحدثة (نظام المسميات الجديد)
-// Admin: مدير النظام (تاج)
-// Leader: قائد (4 نجوم)
-// Assistant: مساعد قائد (3 نجوم)
-// Custom: مستخدم (نجمتين)
-export type Role = "Admin" | "Leader" | "Assistant" | "Custom";
-
-// هيكل بيانات المستخدم الكامل
-export type User = {
-  id: string;
-  name: string;
-  username: string;
-  role: Role;
-  password?: string;
-  permissions: Record<ModuleKey, Permission>;
-};
-
-// هيكل بيانات الموظف (للمزامنة مع رقم الشارة)
-export interface Employee {
-  id: string;
-  fullName: string;
-  empId: string;      // رقم الشارة / الرقم الوظيفي
-  nationalId: string;
-  deptId: string;
-  phone?: string;
-  createdAt: any;
 }
 
-// هيكل بيانات تصريح المركبة (مرتبط بالألوان المعتمدة)
-export interface VehiclePermit {
+export interface TicketData {
+  name: string;
+  empId: string;
+  nationalId: string;
+  message: string;
+  issueType: string;
+  category?: string;
+  supportType?: "tech" | "security";
+  status?: string;
+  createdAt?: any;
+}
+
+export interface RequestData {
   id: string;
-  empNo: string;      // رقم الشارة المربوط
+  type: string;
+  status: string;
+  createdAt: any;
+  rejectionReason?: string;
+  [key: string]: any;
+}
+
+export interface ApprovedRecord {
+  id: string;
   fullName: string;
-  vehicleOwnership: "مركبة خاصة" | "مركبة الشركة" | "مركبة مقاول"; // الأبيض، الأخضر، الأصفر
+  jobTitle?: string;
+  position?: string;
+  serialNumber: string;
+  approvedAt?: any;
+  attachments?: { [key: string]: string };
+  nationalId?: string;
+  idNo?: string;
+  empNo?: string;
+  employeeId?: string;
+  bloodGroup?: string;
+  dept?: string;
+  companyName?: string;
+  plateNo?: string;
+  color?: string;
+  model?: string;
+  activeService?: string; // Helper for UI
+  status: string;
+}
+
+export interface FormState {
+  category: string;
+  requestType: string;
+  fullName: string;
+  jobTitle: string;
+  empNo: string;
+  grade: string;
+  nationality: string;
+  dateOfBirth: string;
+  placeOfBirth: string;
+  nationalId: string;
+  idIssuePlace: string;
+  idIssueDate: string;
+  idExpiryDate: string;
+  dept: string;
+  section: string;
+  companyName: string;
+  mobile: string;
+  bloodGroup: string;
+  licenseType: string;
+  licenseNo: string;
+  licenseExpiry: string;
   plateNo: string;
-  stickerNo: string;
-  expiryDate: string;
-  createdAt: number;
+  color: string;
+  model: string;
+  vehicleType: string;
+  permitArea: string;
+}
+
+export interface GateRecord {
+  id: string;
+  name: string;
+  nameAr?: string;
+  nameEn?: string;
+  location: string;
+  status: "active" | "inactive";
+  [key: string]: any;
+}
+
+export interface RegData {
+  name: string;
+  empId: string;
+  nationalId: string;
+  pass: string;
+  userType: string;
+  affiliation: string;
+}
+
+export interface RecoveryData {
+  empId: string;
+  nationalId: string;
+  newPass: string;
+}
+
+export interface VisitorLog {
+  id: string;
+  name?: string;
+  visitorName?: string;
+  hostName?: string;
+  gateName?: string;
+  action?: string;
+  timestamp?: any;
+  [key: string]: any;
+}
+
+export interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  priority: "Low" | "Normal" | "High" | "Critical";
+  createdAt?: any;
 }

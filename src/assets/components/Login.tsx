@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useApp } from "../../App";
 import { db } from "../../firebase";
-import { collection, addDoc, getDocs, query, where, serverTimestamp, doc, updateDoc, onSnapshot } from "firebase/firestore";
+import { collection, addDoc, getDocs, getDoc, query, where, serverTimestamp, doc, updateDoc, onSnapshot } from "firebase/firestore";
 import { AnnouncementsBoard } from "./AnnouncementsBoard";
 
 /**
@@ -11,6 +11,8 @@ import { AnnouncementsBoard } from "./AnnouncementsBoard";
  * FEATURE: Professional Quick Access PIN (Master Login).
  * FEATURE: Integrated Announcements Board (Security Bulletin).
  */
+
+import type { StructureItem, TicketData, RecoveryData, RegData, User } from "../../types";
 
 export function Login() {
   const { setUser, language, setLanguage, theme } = useApp();
@@ -25,17 +27,17 @@ export function Login() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [isRecovering, setIsRecovering] = useState(false);
   const [recoveryStep, setRecoveryStep] = useState<1 | 2>(1);
-  const [targetAccount, setTargetAccount] = useState<any>(null);
+  const [targetAccount, setTargetAccount] = useState<any>(null); // Keep any for now or strictly type if possible
 
   const [empIdLogin, setEmpIdLogin] = useState("");
   const [empPassword, setEmpPassword] = useState("");
 
   // قوائم الهيكلية المسترجعة من النظام
-  const [departments, setDepartments] = useState<any[]>([]);
-  const [companies, setCompanies] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<StructureItem[]>([]);
+  const [companies, setCompanies] = useState<StructureItem[]>([]);
 
   // بيانات التسجيل المحدثة لتشمل نوع المستخدم والتبعية
-  const [regData, setRegData] = useState({
+  const [regData, setRegData] = useState<RegData>({
     name: "",
     empId: "",
     nationalId: "",
@@ -44,19 +46,19 @@ export function Login() {
     affiliation: ""   // القسم أو الشركة
   });
 
-  const [recoveryData, setRecoveryData] = useState({ empId: "", nationalId: "", newPass: "" });
+  const [recoveryData, setRecoveryData] = useState<RecoveryData>({ empId: "", nationalId: "", newPass: "" });
 
   const [showSupport, setShowSupport] = useState(false);
   const [supportType, setSupportType] = useState<"tech" | "security">("tech");
-  const [ticket, setTicket] = useState({ name: "", empId: "", nationalId: "", message: "", issueType: "" });
+  const [ticket, setTicket] = useState<TicketData>({ name: "", empId: "", nationalId: "", message: "", issueType: "" });
 
   // جلب الأقسام والشركات ديناميكياً عند فتح شاشة التسجيل
   useEffect(() => {
     if (isRegistering) {
       const unsub = onSnapshot(collection(db, "structure"), (snap) => {
-        const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        setDepartments(data.filter((i: any) => i.type === "dept"));
-        setCompanies(data.filter((i: any) => i.type === "comp"));
+        const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as StructureItem));
+        setDepartments(data.filter((i) => i.type === "dept"));
+        setCompanies(data.filter((i) => i.type === "comp"));
       });
       return () => unsub();
     }
@@ -66,58 +68,67 @@ export function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault(); setLoading(true); setError("");
 
-    // --- منطق الرمز السريع الخاص بنواف (Dynamically Loaded) ---
-    const savedPin = localStorage.getItem("vip_pin");
-    const MASTER_PIN = savedPin || "080012"; // Use saved PIN or default
-
-    if (username === MASTER_PIN) {
-      const adminSession = {
-        name: "نواف الجعيد",
-        role: "Admin",
-        username: "deefullahna",
-        isPersistent: true
-      };
-      // حفظ الجلسة الدائمة (تذكرني)
-      localStorage.setItem("maaden_session", JSON.stringify(adminSession));
-      setUser(adminSession);
-      setLoading(false);
-      return;
-    }
-    // ---------------------------------
-
     try {
-      // Check LocalStorage Admin Credentials First
-      const savedCreds = localStorage.getItem("admin_credentials");
-      let localAuthSuccess = false;
+      // Fetch Security Config from Firestore
+      const docRef = doc(db, "system_settings", "config");
+      const snap = await getDoc(docRef);
 
-      if (savedCreds) {
-        const parsed = JSON.parse(savedCreds);
-        if (username === parsed.username && password === parsed.password) {
-          const admin = { name: "نواف الجعيد", role: "Admin", username: parsed.username };
-          localStorage.setItem("maaden_session", JSON.stringify(admin));
-          setUser(admin);
-          localAuthSuccess = true;
+      let adminUser = "admin";
+      let adminPass = "admin123";
+      let adminPin = "1990";
+
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data.username) adminUser = data.username;
+        if (data.password) adminPass = data.password;
+        if (data.vip_pin) adminPin = data.vip_pin;
+      }
+
+      // VIP PIN Login
+      if (username === adminPin) {
+        const adminSession: User = {
+          id: "admin_vip",
+          name: "نواف الجعيد",
+          role: "Admin",
+          username: adminUser,
+          isPersistent: true
+        };
+        localStorage.setItem("maaden_session", JSON.stringify(adminSession));
+        setUser(adminSession);
+        setLoading(false);
+        return;
+      }
+
+      // Standard Admin Login
+      if (username === adminUser && password === adminPass) {
+        const admin: User = { id: "admin_standard", name: "نواف الجعيد", role: "Admin", username: adminUser };
+        localStorage.setItem("maaden_session", JSON.stringify(admin));
+        setUser(admin);
+        setLoading(false);
+        return;
+      }
+
+      // Fallback: Check Firebase Users Collection
+      const q = query(collection(db, "users"), where("username", "==", username.trim()));
+      const userSnap = await getDocs(q);
+
+      if (!userSnap.empty) {
+        const userData = userSnap.docs[0].data();
+        if (userData.password === password) {
+          const finalUser: User = { id: userSnap.docs[0].id, ...userData } as User;
+          localStorage.setItem("maaden_session", JSON.stringify(finalUser));
+          setUser(finalUser);
+        } else {
+          setError(isRTL ? "كلمة المرور غير صحيحة" : "Incorrect Password");
         }
+      } else {
+        setError(isRTL ? "بيانات الدخول غير مسجلة" : "User Not Found");
       }
 
-      if (!localAuthSuccess) {
-        // Fallback to Firebase or Default Hardcoded
-        const q = query(collection(db, "users"), where("username", "==", username.trim()));
-        const snap = await getDocs(q);
-        if (!snap.empty) {
-          const userData = snap.docs[0].data();
-          if (userData.password === password) {
-            const finalUser = { ...userData, id: snap.docs[0].id };
-            localStorage.setItem("maaden_session", JSON.stringify(finalUser));
-            setUser(finalUser);
-          } else { setError(isRTL ? "كلمة المرور غير صحيحة" : "Incorrect Password"); }
-        } else if (username === "deefullahna" && password === "Mm123321") {
-          const admin = { name: "نواف الجعيد", role: "Admin", username: "deefullahna" };
-          localStorage.setItem("maaden_session", JSON.stringify(admin));
-          setUser(admin);
-        } else { setError(isRTL ? "بيانات الدخول غير مسجلة" : "User Not Found"); }
-      }
-    } catch { setError(isRTL ? "فشل الاتصال" : "Server Error"); }
+    } catch (err) {
+      console.error("Auth Error", err);
+      setError(isRTL ? "فشل الاتصال" : "Server Error");
+    }
     setLoading(false);
   };
 
@@ -293,11 +304,11 @@ export function Login() {
                       <>
                         {recoveryStep === 1 ? (
                           <>
-                            <InputBox placeholder={isRTL ? "الرقم الوظيفي" : "Emp ID"} value={recoveryData.empId} onChange={(e: any) => setRecoveryData({ ...recoveryData, empId: e.target.value })} theme={theme} />
-                            <InputBox placeholder={isRTL ? "رقم الهوية" : "National ID"} value={recoveryData.nationalId} onChange={(e: any) => setRecoveryData({ ...recoveryData, nationalId: e.target.value })} theme={theme} />
+                            <InputBox placeholder={isRTL ? "الرقم الوظيفي" : "Emp ID"} value={recoveryData.empId} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRecoveryData({ ...recoveryData, empId: e.target.value })} theme={theme} />
+                            <InputBox placeholder={isRTL ? "رقم الهوية" : "National ID"} value={recoveryData.nationalId} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRecoveryData({ ...recoveryData, nationalId: e.target.value })} theme={theme} />
                           </>
                         ) : (
-                          <InputBox type="password" placeholder={isRTL ? "كلمة المرور الجديدة" : "New Password"} value={recoveryData.newPass} onChange={(e: any) => setRecoveryData({ ...recoveryData, newPass: e.target.value })} theme={theme} />
+                          <InputBox type="password" placeholder={isRTL ? "كلمة المرور الجديدة" : "New Password"} value={recoveryData.newPass} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRecoveryData({ ...recoveryData, newPass: e.target.value })} theme={theme} />
                         )}
                       </>
                     ) : isRegistering ? (
@@ -320,17 +331,17 @@ export function Login() {
                           }
                         </select>
 
-                        <InputBox placeholder={isRTL ? "الاسم الكامل (كما في الهوية)" : "Full Name"} onChange={(e: any) => setRegData({ ...regData, name: e.target.value })} theme={theme} />
-                        <InputBox placeholder={isRTL ? "الرقم الوظيفي" : "Employee ID"} onChange={(e: any) => setRegData({ ...regData, empId: e.target.value })} theme={theme} />
-                        <InputBox placeholder={isRTL ? "رقم الهوية / الإقامة" : "National ID"} onChange={(e: any) => setRegData({ ...regData, nationalId: e.target.value })} theme={theme} />
-                        <InputBox type="password" placeholder={isRTL ? "إنشاء كلمة المرور" : "Create Password"} onChange={(e: any) => setRegData({ ...regData, pass: e.target.value })} theme={theme} />
+                        <InputBox placeholder={isRTL ? "الاسم الكامل (كما في الهوية)" : "Full Name"} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRegData({ ...regData, name: e.target.value })} theme={theme} />
+                        <InputBox placeholder={isRTL ? "الرقم الوظيفي" : "Employee ID"} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRegData({ ...regData, empId: e.target.value })} theme={theme} />
+                        <InputBox placeholder={isRTL ? "رقم الهوية / الإقامة" : "National ID"} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRegData({ ...regData, nationalId: e.target.value })} theme={theme} />
+                        <InputBox type="password" placeholder={isRTL ? "إنشاء كلمة المرور" : "Create Password"} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRegData({ ...regData, pass: e.target.value })} theme={theme} />
                       </>
                     ) : (
                       <>
                         <InputBox
                           placeholder={view === 'admin' ? (isRTL ? "اسم المستخدم أو الرمز السريع" : "Username or Quick PIN") : (isRTL ? "الرقم الوظيفي" : "Emp ID")}
                           value={view === 'admin' ? username : empIdLogin}
-                          onChange={(e: any) => view === 'admin' ? setUsername(e.target.value) : setEmpIdLogin(e.target.value)}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => view === 'admin' ? setUsername(e.target.value) : setEmpIdLogin(e.target.value)}
                           theme={theme}
                         />
                         {/* عرض كلمة المرور فقط إذا لم يكن المستخدم يكتب الرمز السريع نواف */}
@@ -339,7 +350,7 @@ export function Login() {
                             type="password"
                             placeholder={isRTL ? "كلمة المرور" : "Password"}
                             value={view === 'admin' ? password : empPassword}
-                            onChange={(e: any) => view === 'admin' ? setPassword(e.target.value) : setEmpPassword(e.target.value)}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => view === 'admin' ? setPassword(e.target.value) : setEmpPassword(e.target.value)}
                             theme={theme}
                           />
                         )}
@@ -383,7 +394,7 @@ export function Login() {
             <div className="space-y-4">
               {supportType === "tech" ? (
                 <>
-                  <InputBox placeholder={isRTL ? "رقم الهوية / الإقامة *" : "ID Number"} value={ticket.nationalId} onChange={(e: any) => setTicket({ ...ticket, nationalId: e.target.value })} theme="dark" />
+                  <InputBox placeholder={isRTL ? "رقم الهوية / الإقامة *" : "ID Number"} value={ticket.nationalId} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTicket({ ...ticket, nationalId: e.target.value })} theme="dark" />
                   <select
                     value={ticket.issueType}
                     onChange={e => setTicket({ ...ticket, issueType: e.target.value })}
@@ -398,8 +409,8 @@ export function Login() {
                 </>
               ) : (
                 <>
-                  <InputBox placeholder={isRTL ? "الاسم الكامل *" : "Full Name"} value={ticket.name} onChange={(e: any) => setTicket({ ...ticket, name: e.target.value })} theme="dark" />
-                  <InputBox placeholder={isRTL ? "الرقم الوظيفي *" : "Employee ID"} value={ticket.empId} onChange={(e: any) => setTicket({ ...ticket, empId: e.target.value })} theme="dark" />
+                  <InputBox placeholder={isRTL ? "الاسم الكامل *" : "Full Name"} value={ticket.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTicket({ ...ticket, name: e.target.value })} theme="dark" />
+                  <InputBox placeholder={isRTL ? "الرقم الوظيفي *" : "Employee ID"} value={ticket.empId} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTicket({ ...ticket, empId: e.target.value })} theme="dark" />
                 </>
               )}
               <textarea
@@ -423,7 +434,11 @@ export function Login() {
 
 // --- الهياكل الفرعية المساعدة ---
 
-function InputBox({ type = "text", theme, ...props }: any) {
+interface InputBoxProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  theme: string;
+}
+
+function InputBox({ type = "text", theme, ...props }: InputBoxProps) {
   return (
     <input
       {...props}
@@ -443,7 +458,16 @@ function InputBox({ type = "text", theme, ...props }: any) {
   );
 }
 
-function MenuCard({ icon, title, desc, onClick, featured = false, theme }: any) {
+interface MenuCardProps {
+  icon: string;
+  title: string;
+  desc: string;
+  onClick: () => void;
+  featured?: boolean;
+  theme: string;
+}
+
+function MenuCard({ icon, title, desc, onClick, featured = false, theme }: MenuCardProps) {
   return (
     <div
       onClick={onClick}

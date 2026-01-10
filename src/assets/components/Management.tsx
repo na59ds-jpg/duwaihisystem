@@ -23,24 +23,28 @@ import * as XLSX from 'xlsx';
  * FIXED: TS6133 Error (All functions connected).
  */
 
+import { StructureItem, GateRecord, User, VisitorLog, Announcement } from "../../types";
+
+// ... (Imports remain same)
+
 export function Management() {
   const { user, theme, navigateTo, activeFilter, language } = useApp();
   const isDark = theme === 'dark';
   const isRTL = language === 'ar';
 
-  const isSuperAdmin = user?.username === "deefullahna" || user?.role === "Admin";
+  const isSuperAdmin = user?.username === "admin" || user?.role === "Admin";
   const isLeader = user?.role === "Leader" || isSuperAdmin;
 
   const [activeSystem, setActiveSystem] = useState<any>("main");
   const [activeSubView, setActiveSubView] = useState<string>("list");
 
   // بيانات الهيكلية والحسابات
-  const [structureItems, setStructureItems] = useState<any[]>([]);
-  const [securityGates, setSecurityGates] = useState<any[]>([]);
-  const [portalUsers, setPortalUsers] = useState<any[]>([]);
-  const [staff, setStaff] = useState<any[]>([]);
-  const [visitorLogs, setVisitorLogs] = useState<any[]>([]);
-  const [announcements, setAnnouncements] = useState<any[]>([]); // State for announcements
+  const [structureItems, setStructureItems] = useState<StructureItem[]>([]);
+  const [securityGates, setSecurityGates] = useState<GateRecord[]>([]);
+  const [portalUsers, setPortalUsers] = useState<User[]>([]);
+  const [staff, setStaff] = useState<User[]>([]);
+  const [visitorLogs, setVisitorLogs] = useState<VisitorLog[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]); // State for announcements
 
   // محرك البحث والنماذج
   const [searchQuery, setSearchQuery] = useState("");
@@ -67,32 +71,32 @@ export function Management() {
   useEffect(() => {
     // 1. جلب الهيكل التنظيمي (أقسام وشركات)
     const unsubStructure = onSnapshot(query(collection(db, "structure"), orderBy("createdAt", "desc")), (snapshot) => {
-      setStructureItems(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+      setStructureItems(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as StructureItem)));
     });
 
     // 2. جلب بوابات الأمن
     const unsubGates = onSnapshot(collection(db, "security_gates"), (snapshot) => {
-      setSecurityGates(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+      setSecurityGates(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as GateRecord)));
     });
 
     // 3. جلب سجلات الحركات الميدانية
     const unsubLogs = onSnapshot(query(collection(db, "visitor_logs"), orderBy("timestamp", "desc")), (snapshot) => {
-      setVisitorLogs(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+      setVisitorLogs(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as VisitorLog)));
     });
 
     // 4. جلب حسابات طاقم SOC (رجال الأمن)
     const unsubStaff = onSnapshot(collection(db, "employees_accounts"), (snap) => {
-      setStaff(snap.docs.map(d => ({ id: d.id, ...d.data() } as any)).filter(u => u.role === 'Gate'));
+      setStaff(snap.docs.map(d => ({ id: d.id, ...d.data() } as User)).filter(u => u.role === 'Gate'));
     });
 
     // 5. جلب حسابات مستخدمي البوابة (الرقابة الخارجية)
     const unsubPortal = onSnapshot(collection(db, "portal_users"), (snap) => {
-      setPortalUsers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setPortalUsers(snap.docs.map(d => ({ id: d.id, ...d.data() } as User)));
     });
 
     // 6. جلب التنبيهات الأمنية
     const unsubAnnounce = onSnapshot(query(collection(db, "security_announcements"), orderBy("createdAt", "desc")), (snap) => {
-      setAnnouncements(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setAnnouncements(snap.docs.map(d => ({ id: d.id, ...d.data() } as Announcement)));
     });
 
     return () => { unsubStructure(); unsubGates(); unsubLogs(); unsubStaff(); unsubPortal(); unsubAnnounce(); };

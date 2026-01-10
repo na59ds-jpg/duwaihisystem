@@ -1,8 +1,10 @@
 import React, { useState, createContext, useContext, useEffect } from "react";
 import { db } from "./firebase";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
+import { collection, onSnapshot, query, where, doc, getDoc, setDoc } from "firebase/firestore";
+import { uploadToCloudinary } from "./utils/cloudinary";
+import { User } from "./types";
 
-// استيراد المكونات الأساسية للنظام
+// ... (Imports remain same)
 import { Sidebar } from "./assets/components/Sidebar";
 import { Dashboard } from "./assets/components/Dashboard";
 import { Login } from "./assets/components/Login";
@@ -12,7 +14,6 @@ import { SupportTickets } from "./assets/components/SupportTickets";
 import { GatePortal } from "./assets/components/GatePortal";
 import { EmployeePortal } from "./assets/components/EmployeePortal";
 
-// استيراد المديولات التخصصية
 import CompanyManager from "./modules/Contractors/CompanyManager";
 import DepartmentManager from "./modules/Employees/DepartmentManager";
 import WorkCards from "./modules/Permits/WorkCards";
@@ -20,21 +21,21 @@ import AccessControl from "./modules/Security/AccessControl";
 import { EmployeesTable } from "./assets/components/EmployeesTable";
 import { ContractorsTable } from "./assets/components/ContractorsTable";
 
-// تعريف واجهة سياق التطبيق (Context Interface)
+// ... (Context definition remains same)
 interface AppContextType {
   language: string;
   setLanguage: (lang: string) => void;
   theme: 'light' | 'dark';
   setTheme: (theme: 'light' | 'dark') => void;
-  user: any;
-  setUser: (user: any) => void;
+  user: User | null;
+  setUser: (user: User | null) => void;
   navigateTo: (tab: string, filter?: string) => void;
   activeFilter: string | null;
+  adminAvatar: string; // New Context Value
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-// الخطاف المخصص للوصول لبيانات التطبيق من أي مكان
 export const useApp = () => {
   const context = useContext(AppContext);
   if (!context) throw new Error("useApp must be used within AppProvider");
@@ -42,14 +43,12 @@ export const useApp = () => {
 };
 
 const App: React.FC = () => {
-  // 1. حالات الحالة الأساسية (Language, Theme, User)
   const [lang, setLang] = useState(() => localStorage.getItem("maaden_lang") || "ar");
   const [theme, setTheme] = useState<'light' | 'dark'>(() =>
     (localStorage.getItem("maaden_theme") as 'light' | 'dark') || 'dark'
   );
 
-  // استعادة جلسة المستخدم عند بدء التطبيق (تذكرني)
-  const [user, setUser] = useState<any>(() => {
+  const [user, setUser] = useState<User | null>(() => {
     const savedUser = localStorage.getItem("maaden_session");
     try {
       return savedUser ? JSON.parse(savedUser) : null;
@@ -62,37 +61,58 @@ const App: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [pendingRequestsTotal, setPendingRequestsTotal] = useState(0);
 
-  // Profile Dropdown & Settings State
+  // Profile & Security State
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [securityForm, setSecurityForm] = useState({ username: "", password: "", pin: "" });
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [adminAvatar, setAdminAvatar] = useState(""); // State for global avatar URL
 
+  // Load Settings from Firestore on Mount (and when modal opens)
   useEffect(() => {
-    if (showSettingsModal) {
-      const savedCreds = localStorage.getItem("admin_credentials");
-      const savedPin = localStorage.getItem("vip_pin");
-      if (savedCreds) {
-        const parsed = JSON.parse(savedCreds);
-        setSecurityForm(prev => ({ ...prev, username: parsed.username }));
+    const fetchSettings = async () => {
+      try {
+        const docRef = doc(db, "system_settings", "config");
+        const snap = await getDoc(docRef);
+        if (snap.exists()) {
+          const data = snap.data();
+          setSecurityForm({
+            username: data.username || "",
+            password: data.password || "",
+            pin: data.vip_pin || ""
+          });
+          setAdminAvatar(data.avatar || "");
+        }
+      } catch (e) {
+        console.error("Error fetching settings:", e);
       }
-      if (savedPin) {
-        setSecurityForm(prev => ({ ...prev, pin: savedPin }));
-      }
-    }
+    };
+    fetchSettings();
   }, [showSettingsModal]);
 
-  const handleSaveSecurity = () => {
-    if (securityForm.username && securityForm.password) {
-      localStorage.setItem("admin_credentials", JSON.stringify({ username: securityForm.username, password: securityForm.password }));
+  const handleSaveSecurity = async () => {
+    try {
+      let avatarUrl = adminAvatar;
+      if (avatarFile) {
+        avatarUrl = await uploadToCloudinary(avatarFile);
+        setAdminAvatar(avatarUrl);
+      }
+
+      await setDoc(doc(db, "system_settings", "config"), {
+        username: securityForm.username,
+        password: securityForm.password,
+        vip_pin: securityForm.pin,
+        avatar: avatarUrl
+      }, { merge: true });
+
+      alert(lang === 'ar' ? "تم حفظ الإعدادات في السحابة بنجاح ✅" : "Settings Saved to Cloud Successfully ✅");
+      setShowSettingsModal(false);
+    } catch (e) {
+      console.error(e);
+      alert("Error saving settings");
     }
-    if (securityForm.pin) {
-      localStorage.setItem("vip_pin", securityForm.pin);
-    }
-    alert(lang === 'ar' ? "تم حفظ الإعدادات بنجاح ✅" : "Settings Saved Successfully ✅");
-    setShowSettingsModal(false);
   };
 
-  // وظائف التحكم بالحالة
   const handleSetLanguage = (l: string) => {
     setLang(l);
     localStorage.setItem("maaden_lang", l);
@@ -106,15 +126,14 @@ const App: React.FC = () => {
   const handleSetUser = (u: any) => {
     setUser(u);
     if (u) {
-      // حفظ الجلسة في الذاكرة الدائمة لضمان "تذكرني"
       localStorage.setItem("maaden_session", JSON.stringify(u));
     } else {
-      // مسح الجلسة تماماً عند تسجيل الخروج
       localStorage.removeItem("maaden_session");
       setActiveTab("dashboard");
       setActiveFilter(null);
     }
   };
+
 
   // مراقبة الطلبات الجديدة للإدارة فقط (Real-time Audit Badge)
   useEffect(() => {
@@ -144,7 +163,8 @@ const App: React.FC = () => {
     navigateTo: (tab, filter) => {
       setActiveTab(tab);
       setActiveFilter(filter || null);
-    }
+    },
+    adminAvatar // Export avatar to context
   };
 
   const isRTL = lang === 'ar';
@@ -221,7 +241,7 @@ const App: React.FC = () => {
                           <div className={`${isRTL ? 'text-right border-r-2 pr-5' : 'text-left border-l-2 pl-5'} border-[#C4B687]/40`}>
                             <p className="font-bold text-sm leading-tight">{user.name}</p>
                             <p className="text-[#C4B687] font-black text-[8px] uppercase tracking-widest opacity-80">
-                              {user.role === 'Admin' || user.username === 'deefullahna' ? (isRTL ? 'مدير النظام' : 'Administrator') : (isRTL ? 'مشرف SOC' : 'SOC Supervisor')}
+                              {user.role === 'Admin' || user.username === 'admin' ? (isRTL ? 'مدير النظام' : 'Administrator') : (isRTL ? 'مشرف SOC' : 'SOC Supervisor')}
                             </p>
                           </div>
                           <div className="w-10 h-10 rounded-full bg-zinc-800 border-2 border-[#C4B687] flex items-center justify-center overflow-hidden shadow-lg">
@@ -237,7 +257,7 @@ const App: React.FC = () => {
                           <div className={`absolute top-full mt-2 w-56 rounded-2xl border shadow-2xl overflow-hidden py-2 z-50 ${theme === 'dark' ? 'bg-black border-white/10' : 'bg-white border-zinc-200'} ${isRTL ? 'left-0' : 'right-0'}`}>
 
                             {/* Account Settings Option (Admin Only) */}
-                            {(user.role === 'Admin' || user.username === 'deefullahna') && (
+                            {(user.role === 'Admin' || user.username === 'admin') && (
                               <button
                                 onClick={() => { setShowSettingsModal(true); setShowProfileMenu(false); }}
                                 className={`w-full text-start px-6 py-3 text-xs font-bold transition-all flex items-center gap-3 ${theme === 'dark' ? 'text-zinc-300 hover:bg-white/5' : 'text-zinc-600 hover:bg-zinc-50'}`}

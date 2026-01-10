@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useApp } from "../../App";
 import { db } from "../../firebase";
 import { collection, addDoc, serverTimestamp, onSnapshot, query, where } from "firebase/firestore";
+import { uploadToCloudinary } from "../../utils/cloudinary";
 
 /**
  * Maaden Duwaihi Mine - Official Strategic Employee Portal (v6.0)
@@ -21,6 +22,8 @@ const nationalities = [
 
 const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
+import { StructureItem, RequestData, FormState } from "../../types";
+
 export function EmployeePortal() {
   const { user, setUser, theme, language } = useApp();
   const isRTL = language === 'ar';
@@ -31,12 +34,12 @@ export function EmployeePortal() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [safetyAgreed, setSafetyAgreed] = useState(false);
-  const [myRequests, setMyRequests] = useState<any[]>([]);
+  const [myRequests, setMyRequests] = useState<RequestData[]>([]);
 
-  const [departments, setDepartments] = useState<any[]>([]);
-  const [companies, setCompanies] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<StructureItem[]>([]);
+  const [companies, setCompanies] = useState<StructureItem[]>([]);
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<FormState>({
     category: "", requestType: "New", fullName: user?.name || "", jobTitle: "",
     empNo: "", grade: "", nationality: "السعودية", dateOfBirth: "", placeOfBirth: "",
     nationalId: "", idIssuePlace: "", idIssueDate: "", idExpiryDate: "",
@@ -50,14 +53,14 @@ export function EmployeePortal() {
   useEffect(() => {
     const qStructure = query(collection(db, "structure"));
     const unsubStructure = onSnapshot(qStructure, (snap) => {
-      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      setDepartments(data.filter((i: any) => i.type === "dept"));
-      setCompanies(data.filter((i: any) => i.type === "comp"));
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as StructureItem));
+      setDepartments(data.filter((i) => i.type === "dept"));
+      setCompanies(data.filter((i) => i.type === "comp"));
     });
 
     const qReqs = query(collection(db, "employee_requests"), where("empNo", "==", user?.empId || user?.username || ""));
     const unsubReqs = onSnapshot(qReqs, (snap) => {
-      setMyRequests(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setMyRequests(snap.docs.map(d => ({ id: d.id, ...d.data() } as RequestData)));
     });
 
     return () => { unsubStructure(); unsubReqs(); };
@@ -124,14 +127,12 @@ export function EmployeePortal() {
     return [];
   };
 
-  const uploadToCloudinary = async (file: File) => {
-    const data = new FormData();
-    data.append("file", file);
-    data.append("upload_preset", "duwaihi_preset");
-    const res = await fetch(`https://api.cloudinary.com/v1_1/drrbaujge/auto/upload`, { method: "POST", body: data });
-    const json = await res.json();
-    return json.secure_url;
-  };
+  // Import the helper at the top (I will add the import in a separate block or assume it's added)
+  // Replacing the inline function with a call to the helper
+  // But first I need to add the import. 
+  // Since replace_file_content replaces a block, I will replace the function definition with nothing (delete it) 
+  // and add the import at the top.
+
 
   const handleSubmit = async () => {
     for (const field of getRequiredFiles()) {
@@ -263,14 +264,14 @@ export function EmployeePortal() {
 
             {step === 2 && (
               <div className="grid md:grid-cols-3 gap-6 animate-view">
-                <Input label={isRTL ? "الاسم الكامل (حسب الهوية) *" : "Full Name *"} value={form.fullName} onChange={(v: any) => setForm({ ...form, fullName: v })} isDark={isDark} />
-                <Input label={isRTL ? "الرقم الوظيفي *" : "Employee No. *"} value={form.empNo} onChange={(v: any) => setForm({ ...form, empNo: v })} isDark={isDark} />
-                <Input label={isRTL ? "الدرجة الوظيفية *" : "Grade *"} value={form.grade} onChange={(v: any) => setForm({ ...form, grade: v })} isDark={isDark} />
-                <Input label={isRTL ? "المسمى الوظيفي *" : "Job Title *"} value={form.jobTitle} onChange={(v: any) => setForm({ ...form, jobTitle: v })} isDark={isDark} />
-                <Input label={isRTL ? "رقم الهوية / الإقامة (10 أرقام) *" : "ID / Iqama No. (10 digits) *"} value={form.nationalId} onChange={(v: any) => setForm({ ...form, nationalId: v })} isDark={isDark} type="number" />
-                <Input label={isRTL ? "رقم الجوال (10 أرقام) *" : "Mobile No. (10 digits) *"} value={form.mobile} onChange={(v: any) => setForm({ ...form, mobile: v })} isDark={isDark} type="number" />
-                <Input label={isRTL ? "تاريخ الميلاد *" : "Date of Birth *"} value={form.dateOfBirth} onChange={(v: any) => setForm({ ...form, dateOfBirth: v })} isDark={isDark} type="date" />
-                <Input label={isRTL ? "مكان الميلاد *" : "Place of Birth *"} value={form.placeOfBirth} onChange={(v: any) => setForm({ ...form, placeOfBirth: v })} isDark={isDark} />
+                <Input label={isRTL ? "الاسم الكامل (حسب الهوية) *" : "Full Name *"} value={form.fullName} onChange={(v) => setForm({ ...form, fullName: v })} isDark={isDark} />
+                <Input label={isRTL ? "الرقم الوظيفي *" : "Employee No. *"} value={form.empNo} onChange={(v) => setForm({ ...form, empNo: v })} isDark={isDark} />
+                <Input label={isRTL ? "الدرجة الوظيفية *" : "Grade *"} value={form.grade} onChange={(v) => setForm({ ...form, grade: v })} isDark={isDark} />
+                <Input label={isRTL ? "المسمى الوظيفي *" : "Job Title *"} value={form.jobTitle} onChange={(v) => setForm({ ...form, jobTitle: v })} isDark={isDark} />
+                <Input label={isRTL ? "رقم الهوية / الإقامة (10 أرقام) *" : "ID / Iqama No. (10 digits) *"} value={form.nationalId} onChange={(v) => setForm({ ...form, nationalId: v })} isDark={isDark} type="number" />
+                <Input label={isRTL ? "رقم الجوال (10 أرقام) *" : "Mobile No. (10 digits) *"} value={form.mobile} onChange={(v) => setForm({ ...form, mobile: v })} isDark={isDark} type="number" />
+                <Input label={isRTL ? "تاريخ الميلاد *" : "Date of Birth *"} value={form.dateOfBirth} onChange={(v) => setForm({ ...form, dateOfBirth: v })} isDark={isDark} type="date" />
+                <Input label={isRTL ? "مكان الميلاد *" : "Place of Birth *"} value={form.placeOfBirth} onChange={(v) => setForm({ ...form, placeOfBirth: v })} isDark={isDark} />
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-zinc-500 uppercase">{isRTL ? "الجنسية *" : "Nationality *"}</label>
                   <select value={form.nationality} onChange={e => setForm({ ...form, nationality: e.target.value })} className={`w-full p-4 rounded-xl font-black text-sm border-2 ${isDark ? 'bg-black text-white border-white/10' : 'bg-zinc-50 border-zinc-100 text-zinc-900'}`}>
@@ -289,10 +290,10 @@ export function EmployeePortal() {
 
             {step === 3 && activeService === "vehicle" && (
               <div className="grid md:grid-cols-3 gap-6 animate-view">
-                <Input label={isRTL ? "رقم اللوحة *" : "Plate No. *"} value={form.plateNo} onChange={(v: any) => setForm({ ...form, plateNo: v })} isDark={isDark} />
-                <Input label={isRTL ? "رقم الرخصة *" : "License No. *"} value={form.licenseNo} onChange={(v: any) => setForm({ ...form, licenseNo: v })} isDark={isDark} />
-                <Input label={isRTL ? "الموديل (سنة الصنع) *" : "Model *"} value={form.model} onChange={(v: any) => setForm({ ...form, model: v })} isDark={isDark} />
-                <Input label={isRTL ? "اللون *" : "Color *"} value={form.color} onChange={(v: any) => setForm({ ...form, color: v })} isDark={isDark} />
+                <Input label={isRTL ? "رقم اللوحة *" : "Plate No. *"} value={form.plateNo} onChange={(v) => setForm({ ...form, plateNo: v })} isDark={isDark} />
+                <Input label={isRTL ? "رقم الرخصة *" : "License No. *"} value={form.licenseNo} onChange={(v) => setForm({ ...form, licenseNo: v })} isDark={isDark} />
+                <Input label={isRTL ? "الموديل (سنة الصنع) *" : "Model *"} value={form.model} onChange={(v) => setForm({ ...form, model: v })} isDark={isDark} />
+                <Input label={isRTL ? "اللون *" : "Color *"} value={form.color} onChange={(v) => setForm({ ...form, color: v })} isDark={isDark} />
               </div>
             )}
 
@@ -336,7 +337,15 @@ export function EmployeePortal() {
 }
 
 // Helpers
-function ServiceCard({ icon, title, desc, onClick, theme }: any) {
+interface ServiceCardProps {
+  icon: string;
+  title: string;
+  desc: string;
+  onClick: () => void;
+  theme: string;
+}
+
+function ServiceCard({ icon, title, desc, onClick, theme }: ServiceCardProps) {
   const isDark = theme === 'dark';
   return (
     <button onClick={onClick} className={`p-14 rounded-[3.5rem] border transition-all text-center group flex flex-col items-center justify-center gap-6 ${isDark ? 'bg-black/40 border-white/5 hover:border-[#C4B687] shadow-black' : 'bg-white border-zinc-100 shadow-xl hover:border-[#C4B687]'}`}>
@@ -349,12 +358,20 @@ function ServiceCard({ icon, title, desc, onClick, theme }: any) {
   );
 }
 
-function SelectionBox({ label, options, current, onSelect, isDark }: any) {
+interface SelectionBoxProps {
+  label: string;
+  options: { val: string; lab: string }[];
+  current: string;
+  onSelect: (val: string) => void;
+  isDark: boolean;
+}
+
+function SelectionBox({ label, options, current, onSelect, isDark }: SelectionBoxProps) {
   return (
     <div className="space-y-4">
       <label className="text-[10px] font-black text-zinc-500 uppercase block tracking-widest">{label}</label>
       <div className="grid grid-cols-3 gap-4">
-        {options.map((opt: any) => (
+        {options.map((opt) => (
           <button key={opt.val} type="button" onClick={() => onSelect(opt.val)} className={`p-5 rounded-2xl font-black text-[10px] border-2 transition-all uppercase shadow-sm ${current === opt.val ? 'border-[#C4B687] bg-[#C4B687]/10 text-[#C4B687] scale-105' : (isDark ? 'border-white/5 bg-white/5 text-zinc-500 hover:bg-white/10' : 'border-zinc-50 bg-zinc-50 text-zinc-400 hover:bg-zinc-100')}`}>{opt.lab}</button>
         ))}
       </div>
@@ -362,7 +379,15 @@ function SelectionBox({ label, options, current, onSelect, isDark }: any) {
   );
 }
 
-function Input({ label, value, onChange, isDark, type = "text" }: any) {
+interface InputProps {
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+  isDark: boolean;
+  type?: string;
+}
+
+function Input({ label, value, onChange, isDark, type = "text" }: InputProps) {
   return (
     <div className="flex flex-col gap-2">
       <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest px-2">{label}</label>
@@ -370,7 +395,7 @@ function Input({ label, value, onChange, isDark, type = "text" }: any) {
         type={type}
         value={value}
         onChange={e => onChange(e.target.value)}
-        onInput={(e: any) => {
+        onInput={(e: React.ChangeEvent<HTMLInputElement>) => {
           if (type === "number" && e.target.value.length > 10) e.target.value = e.target.value.slice(0, 10);
         }}
         className={`p-4 border-2 rounded-2xl font-black text-sm outline-none transition-all shadow-inner ${isDark ? 'bg-black border-white/5 text-white focus:border-[#C4B687]' : 'bg-zinc-50 border-zinc-100 text-zinc-900 focus:border-[#C4B687]'}`}
