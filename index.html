@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/logo.png?v=2" />    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <title>نظام منجم الدويحي - شركة معادن</title>
+
+    <meta property="og:title" content="ISD - Duwaihi Mine System" />
+    <meta property="og:description" content="نظام إدارة الأمن الصناعي - تطوير نواف الجعيد" />
+    <meta property="og:image" content="https://duwaihi-mine-system.netlify.app/og-image.jpg" />
+    <meta property="og:type" content="website" />
+
+    <script>
+      (function() {
+        const savedTheme = localStorage.getItem('maaden_theme') || 'dark';
+        if (savedTheme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      })();
+    </script>
+
+    <style>
+      /* ضمان أن الخلفية الأساسية لا تحجب صورة App.tsx */
+      html, body {
+        margin: 0;
+        padding: 0;
+        background-color: transparent !important;
+        height: 100%;
+        width: 100%;
+      }
+      #root {
+        min-height: 100vh;
+        background-color: transparent !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
