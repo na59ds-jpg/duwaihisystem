@@ -9,8 +9,8 @@ import { Login } from "./assets/components/Login";
 import { Management } from "./assets/components/Management";
 import { UserManagement } from "./assets/components/UserManagement";
 import { SupportTickets } from "./assets/components/SupportTickets";
-import { GatePortal } from "./assets/components/GatePortal"; 
-import { EmployeePortal } from "./assets/components/EmployeePortal"; 
+import { GatePortal } from "./assets/components/GatePortal";
+import { EmployeePortal } from "./assets/components/EmployeePortal";
 
 // استيراد المديولات التخصصية
 import CompanyManager from "./modules/Contractors/CompanyManager";
@@ -22,11 +22,11 @@ import { ContractorsTable } from "./assets/components/ContractorsTable";
 
 // تعريف واجهة سياق التطبيق (Context Interface)
 interface AppContextType {
-  language: string; 
+  language: string;
   setLanguage: (lang: string) => void;
-  theme: 'light' | 'dark'; 
+  theme: 'light' | 'dark';
   setTheme: (theme: 'light' | 'dark') => void;
-  user: any; 
+  user: any;
   setUser: (user: any) => void;
   navigateTo: (tab: string, filter?: string) => void;
   activeFilter: string | null;
@@ -35,19 +35,19 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 // الخطاف المخصص للوصول لبيانات التطبيق من أي مكان
-export const useApp = () => { 
-  const context = useContext(AppContext); 
-  if (!context) throw new Error("useApp must be used within AppProvider"); 
-  return context; 
+export const useApp = () => {
+  const context = useContext(AppContext);
+  if (!context) throw new Error("useApp must be used within AppProvider");
+  return context;
 };
 
 const App: React.FC = () => {
   // 1. حالات الحالة الأساسية (Language, Theme, User)
   const [lang, setLang] = useState(() => localStorage.getItem("maaden_lang") || "ar");
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => 
+  const [theme, setTheme] = useState<'light' | 'dark'>(() =>
     (localStorage.getItem("maaden_theme") as 'light' | 'dark') || 'dark'
   );
-  
+
   // استعادة جلسة المستخدم عند بدء التطبيق (تذكرني)
   const [user, setUser] = useState<any>(() => {
     const savedUser = localStorage.getItem("maaden_session");
@@ -60,7 +60,37 @@ const App: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState("dashboard");
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
-  const [pendingRequestsTotal, setPendingRequestsTotal] = useState(0); 
+  const [pendingRequestsTotal, setPendingRequestsTotal] = useState(0);
+
+  // Profile Dropdown & Settings State
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [securityForm, setSecurityForm] = useState({ username: "", password: "", pin: "" });
+
+  useEffect(() => {
+    if (showSettingsModal) {
+      const savedCreds = localStorage.getItem("admin_credentials");
+      const savedPin = localStorage.getItem("vip_pin");
+      if (savedCreds) {
+        const parsed = JSON.parse(savedCreds);
+        setSecurityForm(prev => ({ ...prev, username: parsed.username }));
+      }
+      if (savedPin) {
+        setSecurityForm(prev => ({ ...prev, pin: savedPin }));
+      }
+    }
+  }, [showSettingsModal]);
+
+  const handleSaveSecurity = () => {
+    if (securityForm.username && securityForm.password) {
+      localStorage.setItem("admin_credentials", JSON.stringify({ username: securityForm.username, password: securityForm.password }));
+    }
+    if (securityForm.pin) {
+      localStorage.setItem("vip_pin", securityForm.pin);
+    }
+    alert(lang === 'ar' ? "تم حفظ الإعدادات بنجاح ✅" : "Settings Saved Successfully ✅");
+    setShowSettingsModal(false);
+  };
 
   // وظائف التحكم بالحالة
   const handleSetLanguage = (l: string) => {
@@ -78,10 +108,10 @@ const App: React.FC = () => {
     if (u) {
       // حفظ الجلسة في الذاكرة الدائمة لضمان "تذكرني"
       localStorage.setItem("maaden_session", JSON.stringify(u));
-    } else { 
+    } else {
       // مسح الجلسة تماماً عند تسجيل الخروج
-      localStorage.removeItem("maaden_session"); 
-      setActiveTab("dashboard"); 
+      localStorage.removeItem("maaden_session");
+      setActiveTab("dashboard");
       setActiveFilter(null);
     }
   };
@@ -103,18 +133,18 @@ const App: React.FC = () => {
   }, [theme]);
 
   // تجهيز القيم لمزود السياق
-  const contextValue: AppContextType = { 
-    language: lang, 
-    setLanguage: handleSetLanguage, 
-    theme, 
-    setTheme: handleSetTheme, 
-    user, 
-    setUser: handleSetUser, 
-    activeFilter, 
-    navigateTo: (tab, filter) => { 
-      setActiveTab(tab); 
-      setActiveFilter(filter || null); 
-    } 
+  const contextValue: AppContextType = {
+    language: lang,
+    setLanguage: handleSetLanguage,
+    theme,
+    setTheme: handleSetTheme,
+    user,
+    setUser: handleSetUser,
+    activeFilter,
+    navigateTo: (tab, filter) => {
+      setActiveTab(tab);
+      setActiveFilter(filter || null);
+    }
   };
 
   const isRTL = lang === 'ar';
@@ -129,12 +159,12 @@ const App: React.FC = () => {
     switch (activeTab) {
       case "dashboard": return <Dashboard />;
       case "management": return <Management />;
-      case "security_control": return <Management />; 
-      
+      case "security_control": return <Management />;
+
       // للمدير: بوابة الموظف تعرض الطلبات الواردة (تدقيق) وبوابة الأمن تعرض الفحص الميداني
-      case "employee_portal": return <SupportTickets />; 
-      case "gate_portal": return <AccessControl />; 
-      
+      case "employee_portal": return <SupportTickets />;
+      case "gate_portal": return <AccessControl />;
+
       case "users": return <UserManagement />;
       case "tickets": return <SupportTickets />;
       case "personnel": return <DepartmentManager />;
@@ -150,28 +180,28 @@ const App: React.FC = () => {
     <AppContext.Provider value={contextValue}>
       <div className={`min-h-screen relative transition-colors duration-700 ${theme === 'dark' ? 'bg-black text-white' : 'bg-[#F8FAFC] text-zinc-900'}`}>
         {/* خلفية النظام الإستراتيجية */}
-        <div 
+        <div
           className="fixed inset-0 z-0 pointer-events-none opacity-40"
           style={{ backgroundImage: "url('/bg.jpg')", backgroundSize: 'cover', backgroundPosition: 'center' }}
         />
         <div className="relative z-10 min-h-screen flex flex-col">
           {!user ? (
-            <Login /> 
+            <Login />
           ) : (
             <div className="flex h-screen overflow-hidden" dir={isRTL ? "rtl" : "ltr"}>
               {/* شريط السايدبار للإدارة فقط */}
               {(user.role !== 'Employee' && user.role !== 'Gate') && (
                 <Sidebar activeTab={activeTab} activeFilter={activeFilter} navigateTo={contextValue.navigateTo} />
               )}
-              
+
               <main className="flex-1 flex flex-col overflow-hidden relative">
                 {/* الهيدر العلوي للإدارة فقط */}
                 {(user.role !== 'Employee' && user.role !== 'Gate') && (
                   <header className={`h-20 border-b flex items-center justify-between px-10 z-20 backdrop-blur-xl ${theme === 'dark' ? 'bg-black/40 border-white/5' : 'bg-white/90 border-zinc-200'}`}>
                     <button onClick={() => handleSetLanguage(isRTL ? "en" : "ar")} className="px-6 py-2 rounded-xl border border-[#C4B687] text-[#C4B687] font-black text-[10px] uppercase">
-                        {isRTL ? "English" : "العربية"}
+                      {isRTL ? "English" : "العربية"}
                     </button>
-                    
+
                     <div className="flex items-center gap-6">
                       {/* جرس الإشعارات للطلبات المعلقة */}
                       <div className="relative cursor-pointer" onClick={() => setActiveTab("tickets")}>
@@ -182,21 +212,55 @@ const App: React.FC = () => {
                           </span>
                         )}
                       </div>
-                      
-                      <div className={`${isRTL ? 'text-right border-r-2 pr-5' : 'text-left border-l-2 pl-5'} border-[#C4B687]/40`}>
-                        <p className="font-bold text-sm leading-tight">{user.name}</p>
-                        <p className="text-[#C4B687] font-black text-[8px] uppercase tracking-widest opacity-80">
-                            {user.role === 'Admin' || user.username === 'deefullahna' ? (isRTL ? 'مدير النظام' : 'Administrator') : (isRTL ? 'مشرف SOC' : 'SOC Supervisor')}
-                        </p>
+
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowProfileMenu(!showProfileMenu)}
+                          className="flex items-center gap-4 hover:bg-[#C4B687]/5 p-2 rounded-xl transition-all"
+                        >
+                          <div className={`${isRTL ? 'text-right border-r-2 pr-5' : 'text-left border-l-2 pl-5'} border-[#C4B687]/40`}>
+                            <p className="font-bold text-sm leading-tight">{user.name}</p>
+                            <p className="text-[#C4B687] font-black text-[8px] uppercase tracking-widest opacity-80">
+                              {user.role === 'Admin' || user.username === 'deefullahna' ? (isRTL ? 'مدير النظام' : 'Administrator') : (isRTL ? 'مشرف SOC' : 'SOC Supervisor')}
+                            </p>
+                          </div>
+                          <div className="w-10 h-10 rounded-full bg-zinc-800 border-2 border-[#C4B687] flex items-center justify-center overflow-hidden shadow-lg">
+                            {/* Placeholder Image or User Initial */}
+                            <span className="text-xs font-black text-[#C4B687]">
+                              {user.name ? user.name.charAt(0).toUpperCase() : "A"}
+                            </span>
+                          </div>
+                        </button>
+
+                        {/* Dropdown Menu */}
+                        {showProfileMenu && (
+                          <div className={`absolute top-full mt-2 w-56 rounded-2xl border shadow-2xl overflow-hidden py-2 z-50 ${theme === 'dark' ? 'bg-black border-white/10' : 'bg-white border-zinc-200'} ${isRTL ? 'left-0' : 'right-0'}`}>
+
+                            {/* Account Settings Option (Admin Only) */}
+                            {(user.role === 'Admin' || user.username === 'deefullahna') && (
+                              <button
+                                onClick={() => { setShowSettingsModal(true); setShowProfileMenu(false); }}
+                                className={`w-full text-start px-6 py-3 text-xs font-bold transition-all flex items-center gap-3 ${theme === 'dark' ? 'text-zinc-300 hover:bg-white/5' : 'text-zinc-600 hover:bg-zinc-50'}`}
+                              >
+                                <span>⚙️</span> {isRTL ? "إعدادات الحساب" : "Account Settings"}
+                              </button>
+                            )}
+
+                            <div className="h-px bg-white/10 my-1 mx-4"></div>
+
+                            <button
+                              onClick={() => handleSetUser(null)}
+                              className={`w-full text-start px-6 py-3 text-xs font-bold transition-all flex items-center gap-3 text-red-500 hover:bg-red-500/10`}
+                            >
+                              <span>🚪</span> {isRTL ? "تسجيل الخروج" : "Logout"}
+                            </button>
+                          </div>
+                        )}
                       </div>
-                      
-                      <button onClick={() => handleSetUser(null)} className="w-10 h-10 flex items-center justify-center rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                      </button>
                     </div>
                   </header>
                 )}
-                
+
                 {/* منطقة عرض المحتوى الرئيسية */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar">
                   <div className={`${(user.role === 'Employee' || user.role === 'Gate') ? '' : 'p-8 max-w-[1600px] mx-auto'} animate-view`}>
@@ -207,6 +271,48 @@ const App: React.FC = () => {
             </div>
           )}
         </div>
+
+        {/* Account Settings Modal */}
+        {showSettingsModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+            <div className={`w-full max-w-2xl p-8 rounded-[2.5rem] border-2 shadow-2xl relative ${theme === 'dark' ? 'bg-black border-[#C4B687]/30 shadow-[#C4B687]/10' : 'bg-white border-zinc-200'}`} dir={isRTL ? "rtl" : "ltr"}>
+              <button onClick={() => setShowSettingsModal(false)} className="absolute top-6 left-6 text-zinc-500 hover:text-red-500 transition-colors text-2xl font-black">✕</button>
+
+              <h3 className="text-2xl font-[900] text-[#C4B687] uppercase tracking-tighter mb-2 text-center">{isRTL ? "إعدادات الحساب الإداري" : "Admin Account Settings"}</h3>
+              <p className={`text-center text-xs font-bold opacity-50 mb-8 ${theme === 'dark' ? 'text-white' : 'text-zinc-600'}`}>
+                {isRTL ? "تحكم كامل بهوية المدير ورمز الطوارئ" : "Manage admin credentials and VIP PIN"}
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Credentials */}
+                <div className={`p-6 rounded-[2rem] border ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-zinc-50 border-zinc-200'}`}>
+                  <h4 className={`text-sm font-black mb-4 ${theme === 'dark' ? 'text-white' : 'text-zinc-900'}`}>{isRTL ? "بيانات الدخول (Local)" : "Login Credentials"}</h4>
+                  <div className="space-y-3">
+                    <input value={securityForm.username} onChange={e => setSecurityForm({ ...securityForm, username: e.target.value })} placeholder="Username" className={`w-full p-3 rounded-xl border outline-none font-bold text-sm ${theme === 'dark' ? 'bg-black border-white/10 text-white' : 'bg-white border-zinc-200'}`} />
+                    <input type="password" value={securityForm.password} onChange={e => setSecurityForm({ ...securityForm, password: e.target.value })} placeholder="Password" className={`w-full p-3 rounded-xl border outline-none font-bold text-sm ${theme === 'dark' ? 'bg-black border-white/10 text-white' : 'bg-white border-zinc-200'}`} />
+                  </div>
+                </div>
+
+                {/* VIP PIN */}
+                <div className={`p-6 rounded-[2rem] border ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-zinc-50 border-zinc-200'}`}>
+                  <h4 className={`text-sm font-black mb-4 ${theme === 'dark' ? 'text-white' : 'text-zinc-900'}`}>{isRTL ? "الرمز السريع (VIP PIN)" : "VIP Quick Access"}</h4>
+                  <div className="space-y-3 text-center">
+                    <p className="text-[10px] opacity-50 mb-2">Use this code for instant login.</p>
+                    <input type="text" value={securityForm.pin} onChange={e => setSecurityForm({ ...securityForm, pin: e.target.value })} placeholder="080012" className={`w-full p-3 rounded-xl border outline-none text-center text-2xl tracking-[0.3em] font-black ${theme === 'dark' ? 'bg-black border-white/10 text-[#C4B687]' : 'bg-white border-zinc-200 text-black'}`} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 flex justify-center">
+                <button onClick={handleSaveSecurity} className="px-12 py-4 bg-[#C4B687] text-black rounded-2xl font-[900] shadow-xl hover:scale-105 active:scale-95 transition-all">
+                  {isRTL ? "حفظ التحديثات" : "Save Updates"}
+                </button>
+              </div>
+
+            </div>
+          </div>
+        )}
+
       </div>
     </AppContext.Provider>
   );

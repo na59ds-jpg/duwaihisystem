@@ -62,32 +62,7 @@ export function Management() {
     setActiveSubView("list");
   }, [activeFilter]);
 
-  // Security Settings State
-  const [securityForm, setSecurityForm] = useState({ username: "", password: "", pin: "" });
 
-  useEffect(() => {
-    // Load existing settings from localStorage (for display/edit placeholder)
-    const savedCreds = localStorage.getItem("admin_credentials");
-    const savedPin = localStorage.getItem("vip_pin");
-    if (savedCreds) {
-      const parsed = JSON.parse(savedCreds);
-      setSecurityForm(prev => ({ ...prev, username: parsed.username }));
-    }
-    if (savedPin) {
-      setSecurityForm(prev => ({ ...prev, pin: savedPin }));
-    }
-  }, [activeSystem]);
-
-  const handleSaveSecurity = () => {
-    if (securityForm.username && securityForm.password) {
-      localStorage.setItem("admin_credentials", JSON.stringify({ username: securityForm.username, password: securityForm.password }));
-    }
-    if (securityForm.pin) {
-      localStorage.setItem("vip_pin", securityForm.pin);
-    }
-    alert(isRTL ? "تم حفظ الإعدادات بنجاح ✅" : "Settings Saved Successfully ✅");
-    setSecurityForm({ username: "", password: "", pin: "" }); // Clear for security
-  };
 
   useEffect(() => {
     // 1. جلب الهيكل التنظيمي (أقسام وشركات)
@@ -333,30 +308,7 @@ export function Management() {
               ))}
             </div>
 
-            {/* New Location for Security Settings */}
-            <div className="md:col-span-2 mt-8 pt-8 border-t border-white/10">
-              <h3 className="text-xl font-[900] text-[#C4B687] mb-6 text-center">{isRTL ? "إعدادات الأمان المتقدمة" : "Advanced Security Settings"}</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Admin Credentials */}
-                <div className={`p-6 rounded-[2rem] border ${isDark ? 'bg-black/20 border-white/5' : 'bg-zinc-50 border-zinc-200'}`}>
-                  <h4 className={`text-sm font-bold mb-4 ${isDark ? 'text-white' : 'text-zinc-900'}`}>{isRTL ? "تحديث بيانات المسؤول" : "Update Admin Credentials"}</h4>
-                  <div className="space-y-3">
-                    <input value={securityForm.username} onChange={e => setSecurityForm({ ...securityForm, username: e.target.value })} placeholder={isRTL ? "اسم المستخدم" : "Username"} className={`w-full p-3 rounded-xl border outline-none font-bold text-sm ${isDark ? 'bg-black border-white/10 text-white' : 'bg-white border-zinc-200'}`} />
-                    <input type="password" value={securityForm.password} onChange={e => setSecurityForm({ ...securityForm, password: e.target.value })} placeholder={isRTL ? "كلمة المرور" : "Password"} className={`w-full p-3 rounded-xl border outline-none font-bold text-sm ${isDark ? 'bg-black border-white/10 text-white' : 'bg-white border-zinc-200'}`} />
-                    <button onClick={handleSaveSecurity} className="w-full py-3 bg-[#C4B687]/20 text-[#C4B687] border border-[#C4B687]/50 rounded-xl font-bold hover:bg-[#C4B687] hover:text-black transition-all text-xs">{isRTL ? "حفظ التغييرات" : "Save Changes"}</button>
-                  </div>
-                </div>
 
-                {/* VIP Access */}
-                <div className={`p-6 rounded-[2rem] border ${isDark ? 'bg-black/20 border-white/5' : 'bg-zinc-50 border-zinc-200'}`}>
-                  <h4 className={`text-sm font-bold mb-4 ${isDark ? 'text-white' : 'text-zinc-900'}`}>{isRTL ? "رمز الدخول السريع (VIP)" : "VIP Quick Access PIN"}</h4>
-                  <div className="space-y-3">
-                    <input type="password" value={securityForm.pin} onChange={e => setSecurityForm({ ...securityForm, pin: e.target.value })} placeholder="******" className={`w-full p-3 rounded-xl border outline-none text-center text-xl tracking-widest font-black ${isDark ? 'bg-black border-white/10 text-white' : 'bg-white border-zinc-200'}`} />
-                    <button onClick={handleSaveSecurity} className="w-full py-3 bg-[#C4B687]/20 text-[#C4B687] border border-[#C4B687]/50 rounded-xl font-bold hover:bg-[#C4B687] hover:text-black transition-all text-xs">{isRTL ? "تحديث الرمز" : "Update PIN"}</button>
-                  </div>
-                </div>
-              </div>
-            </div>
 
           </div>
         </div>
