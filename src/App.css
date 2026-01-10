@@ -1,9 +1,9 @@
-/* 1. استيراد الخط المعتمد للهوية الملكية */
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
+/* 1. استيراد الخط المعتمد للهوية الحكومية (IBM Plex Sans Arabic) */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@100;200;300;400;500;600;700&display=swap');
 
 /* 2. الإعدادات الجذرية للنظام */
 :root {
-  font-family: 'Cairo', sans-serif !important;
+  font-family: 'IBM Plex Sans Arabic', sans-serif !important;
 }
 
 #root {
@@ -28,7 +28,7 @@ body {
   overflow: hidden;
   background-color: transparent !important;
   /* للسماح لصورة الخلفية بالظهور */
-  font-family: 'Cairo', sans-serif !important;
+  font-family: 'IBM Plex Sans Arabic', sans-serif !important;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -59,15 +59,16 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* 5. تحسينات النصوص والعناوين (وزن 900 للهيبة) */
+/* 5. تحسينات النصوص والعناوين (وزن 700 للرسمية) */
 h1,
 h2,
 h3,
 h4,
 .font-black {
-  letter-spacing: -0.02em;
-  font-weight: 900 !important;
-  font-family: 'Cairo', sans-serif !important;
+  letter-spacing: 0;
+  /* إلغاء التباعد السلبي للخط الجديد */
+  font-weight: 700 !important;
+  font-family: 'IBM Plex Sans Arabic', sans-serif !important;
 }
 
 /* 6. تأثيرات الأنيميشن (دخول ناعم للواجهات) */

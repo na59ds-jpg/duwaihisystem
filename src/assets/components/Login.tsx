@@ -236,8 +236,10 @@ export function Login() {
             <p className="text-[10px] font-black text-[#C4B687] tracking-[0.2em] uppercase opacity-90 leading-tight">
               {isRTL ? 'المنصة الأمنية الموحدة لمنجم الدويحي' : 'Unified Security Platform - Al Duwaihi Mine'}
             </p>
-            <h1 className={`text-4xl font-[900] tracking-tighter text-white leading-none mt-1`}>
-              مـسـار <span className="text-[#C4B687] mx-1">|</span> MASAR
+            <h1 className={`text-5xl font-black text-white leading-none mt-2 tracking-wide font-['IBM_Plex_Sans_Arabic'] flex items-center`}>
+              مـسـار
+              <span className="text-[#C4B687] mx-3 text-4xl opacity-50 font-light">|</span>
+              <span className="tracking-[0.3em] font-sans font-bold text-[#C4B687]">MASAR</span>
             </h1>
           </div>
         </div>

@@ -50,7 +50,7 @@ export function Sidebar({ activeTab, navigateTo, activeFilter }: { activeTab: st
     return (
       <button
         onClick={onClick}
-        className={`w-full flex items-center gap-4 transition-all duration-500 rounded-2xl font-['Cairo'] font-[900] relative px-6 py-4 mb-2 group ${isActive
+        className={`w-full flex items-center gap-4 transition-all duration-500 rounded-2xl font-bold relative px-6 py-4 mb-2 group ${isActive
           ? "bg-[#C4B687] text-[#0f172a] shadow-2xl scale-[1.03] z-10"
           : isDark
             ? "text-zinc-400 hover:bg-white/5 hover:text-white"
@@ -69,7 +69,7 @@ export function Sidebar({ activeTab, navigateTo, activeFilter }: { activeTab: st
   };
 
   return (
-    <aside className={`w-80 flex flex-col h-full overflow-hidden transition-all duration-500 font-['Cairo'] ${isRTL ? 'border-l' : 'border-r'} backdrop-blur-3xl z-30 ${isDark ? 'bg-black/60 border-white/5' : 'bg-white border-zinc-100 shadow-xl'
+    <aside className={`w-80 flex flex-col h-full overflow-hidden transition-all duration-500 ${isRTL ? 'border-l' : 'border-r'} backdrop-blur-3xl z-30 ${isDark ? 'bg-black/60 border-white/5' : 'bg-white border-zinc-100 shadow-xl'
       }`} dir={isRTL ? "rtl" : "ltr"}>
 
       {/* هيدر الهوية المؤسسية */}
