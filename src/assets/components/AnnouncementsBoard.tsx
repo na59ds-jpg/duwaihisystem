@@ -55,7 +55,7 @@ export function AnnouncementsBoard() {
                         <h4 className={`text-sm font-black mb-1 ${item.priority === 'High' ? 'text-red-400' : 'text-white'}`}>
                             {item.title}
                         </h4>
-                        <p className="text-[10px] font-medium text-zinc-400 leading-relaxed">
+                        <p className="text-xs font-medium text-zinc-300 leading-relaxed whitespace-pre-line">
                             {item.content}
                         </p>
                     </div>

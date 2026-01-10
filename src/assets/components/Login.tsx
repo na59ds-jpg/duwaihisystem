@@ -222,11 +222,11 @@ export function Login() {
   };
 
   return (
-    <div className={`min-h-screen flex flex-col font-['Cairo'] relative transition-colors duration-700 ${theme === 'dark' ? 'text-white' : 'text-zinc-900'} bg-zinc-950`} dir={isRTL ? "rtl" : "ltr"}>
+    <div className={`min-h-screen flex flex-col font-['Cairo'] relative transition-colors duration-700 ${theme === 'dark' ? 'text-white' : 'text-zinc-900'} bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-zinc-800 via-zinc-950 to-black`} dir={isRTL ? "rtl" : "ltr"}>
 
       {/* Background Effects */}
-      <div className="fixed inset-0 bg-grid-pattern opacity-20 pointer-events-none"></div>
-      <div className="fixed inset-0 bg-gradient-to-br from-black via-zinc-900 to-[#C4B687]/5 pointer-events-none"></div>
+      <div className="fixed inset-0 bg-grid-pattern opacity-10 pointer-events-none"></div>
+      <div className="fixed inset-0 bg-black/40 pointer-events-none"></div>
 
       {/* Header */}
       <header className={`backdrop-blur-xl border-b p-6 flex justify-between items-center px-10 md:px-20 z-20 shadow-xl transition-all ${theme === 'dark' ? 'bg-black/60 border-[#C4B687]/20' : 'bg-black/80 border-zinc-800'}`}>
@@ -446,12 +446,12 @@ function InputBox({ type = "text", theme, ...props }: InputBoxProps) {
       {...props}
       type={type}
       className={`
-                w-full p-4 rounded-xl border
+                w-full p-4 rounded-xl border border-[#C4B687]/50
                 text-center font-bold focus:border-[#C4B687] 
                 outline-none transition-all
                 ${theme === 'dark'
-          ? 'bg-white/5 border-white/10 text-white placeholder:text-white/20 focus:bg-white/[0.08]'
-          : 'bg-black/5 border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus:bg-black/[0.02]'
+          ? 'bg-white/5 text-white placeholder:text-white/50 focus:bg-white/[0.08]'
+          : 'bg-black/5 text-zinc-900 placeholder:text-zinc-400 focus:bg-black/[0.02]'
         }
                 ${type === 'password' ? 'text-2xl tracking-[0.3em]' : 'text-base'}
             `}

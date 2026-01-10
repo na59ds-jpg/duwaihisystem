@@ -337,14 +337,14 @@ const App: React.FC = () => {
                       value={securityForm.username}
                       onChange={e => setSecurityForm({ ...securityForm, username: e.target.value })}
                       placeholder="Username"
-                      className="w-full p-4 rounded-xl border-2 border-white/10 outline-none font-bold text-sm bg-black text-white placeholder-white/50 focus:border-[#C4B687] transition-colors"
+                      className="w-full p-4 rounded-xl border border-[#C4B687]/50 outline-none font-bold text-sm bg-black text-white placeholder-white/50 focus:border-[#C4B687] transition-colors"
                     />
                     <input
                       type="password"
                       value={securityForm.password}
                       onChange={e => setSecurityForm({ ...securityForm, password: e.target.value })}
                       placeholder="Password"
-                      className="w-full p-4 rounded-xl border-2 border-white/10 outline-none font-bold text-sm bg-black text-white placeholder-white/50 focus:border-[#C4B687] transition-colors"
+                      className="w-full p-4 rounded-xl border border-[#C4B687]/50 outline-none font-bold text-sm bg-black text-white placeholder-white/50 focus:border-[#C4B687] transition-colors"
                     />
                   </div>
                 </div>
@@ -359,7 +359,7 @@ const App: React.FC = () => {
                       value={securityForm.pin}
                       onChange={e => setSecurityForm({ ...securityForm, pin: e.target.value })}
                       placeholder="080012"
-                      className="w-full p-4 rounded-xl border-2 border-white/10 outline-none text-center text-2xl tracking-[0.3em] font-black bg-black text-[#C4B687] placeholder-white/20 focus:border-[#C4B687] transition-colors"
+                      className="w-full p-4 rounded-xl border border-[#C4B687]/50 outline-none text-center text-2xl tracking-[0.3em] font-black bg-black text-[#C4B687] placeholder-white/20 focus:border-[#C4B687] transition-colors"
                     />
                   </div>
                 </div>
