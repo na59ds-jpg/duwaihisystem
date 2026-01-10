@@ -85,7 +85,7 @@ export function Login() {
       }
 
       // VIP PIN Login
-      if (username === adminPin) {
+      if (username.trim() === adminPin.trim()) {
         const adminSession: User = {
           id: "admin_vip",
           name: "نواف الجعيد",
