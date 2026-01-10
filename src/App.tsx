@@ -3,6 +3,8 @@ import { db } from "./firebase";
 import { collection, onSnapshot, query, where, doc, getDoc, setDoc } from "firebase/firestore";
 import type { User } from "./types";
 
+import { uploadToCloudinary } from "./utils/cloudinary";
+
 // ... (Imports remain same)
 import { Sidebar } from "./assets/components/Sidebar";
 import { Dashboard } from "./assets/components/Dashboard";
@@ -299,13 +301,51 @@ const App: React.FC = () => {
                 {isRTL ? "تحكم كامل بهوية المدير ورمز الطوارئ" : "Manage admin credentials and VIP PIN"}
               </p>
 
+              <div className="flex flex-col items-center mb-8">
+                <div className="relative group">
+                  <div className="w-32 h-32 rounded-full border-4 border-[#C4B687] overflow-hidden bg-zinc-900 shadow-2xl">
+                    <img src={adminAvatar || "/avatar-placeholder.png"} alt="Admin" className="w-full h-full object-cover" />
+                  </div>
+                  <label className="absolute bottom-0 right-0 w-10 h-10 bg-[#C4B687] rounded-full flex items-center justify-center cursor-pointer hover:scale-110 transition-transform shadow-lg z-10">
+                    <span className="text-xl">📷</span>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          try {
+                            const url = await uploadToCloudinary(e.target.files[0]);
+                            if (url) setAdminAvatar(url);
+                          } catch (err) {
+                            alert("Upload Failed");
+                          }
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+                <p className={`mt-4 text-xs font-bold ${theme === 'dark' ? 'text-white' : 'text-zinc-600'}`}>{isRTL ? "صورة الملف الشخصي" : "Profile Picture"}</p>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Credentials */}
                 <div className={`p-6 rounded-[2rem] border ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-zinc-50 border-zinc-200'}`}>
                   <h4 className={`text-sm font-black mb-4 ${theme === 'dark' ? 'text-white' : 'text-zinc-900'}`}>{isRTL ? "بيانات الدخول (Local)" : "Login Credentials"}</h4>
                   <div className="space-y-3">
-                    <input value={securityForm.username} onChange={e => setSecurityForm({ ...securityForm, username: e.target.value })} placeholder="Username" className={`w-full p-3 rounded-xl border outline-none font-bold text-sm ${theme === 'dark' ? 'bg-black border-white/10 text-white' : 'bg-white border-zinc-200'}`} />
-                    <input type="password" value={securityForm.password} onChange={e => setSecurityForm({ ...securityForm, password: e.target.value })} placeholder="Password" className={`w-full p-3 rounded-xl border outline-none font-bold text-sm ${theme === 'dark' ? 'bg-black border-white/10 text-white' : 'bg-white border-zinc-200'}`} />
+                    <input
+                      value={securityForm.username}
+                      onChange={e => setSecurityForm({ ...securityForm, username: e.target.value })}
+                      placeholder="Username"
+                      className="w-full p-4 rounded-xl border-2 border-white/10 outline-none font-bold text-sm bg-black text-white placeholder-white/50 focus:border-[#C4B687] transition-colors"
+                    />
+                    <input
+                      type="password"
+                      value={securityForm.password}
+                      onChange={e => setSecurityForm({ ...securityForm, password: e.target.value })}
+                      placeholder="Password"
+                      className="w-full p-4 rounded-xl border-2 border-white/10 outline-none font-bold text-sm bg-black text-white placeholder-white/50 focus:border-[#C4B687] transition-colors"
+                    />
                   </div>
                 </div>
 
@@ -314,7 +354,13 @@ const App: React.FC = () => {
                   <h4 className={`text-sm font-black mb-4 ${theme === 'dark' ? 'text-white' : 'text-zinc-900'}`}>{isRTL ? "الرمز السريع (VIP PIN)" : "VIP Quick Access"}</h4>
                   <div className="space-y-3 text-center">
                     <p className="text-[10px] opacity-50 mb-2">Use this code for instant login.</p>
-                    <input type="text" value={securityForm.pin} onChange={e => setSecurityForm({ ...securityForm, pin: e.target.value })} placeholder="080012" className={`w-full p-3 rounded-xl border outline-none text-center text-2xl tracking-[0.3em] font-black ${theme === 'dark' ? 'bg-black border-white/10 text-[#C4B687]' : 'bg-white border-zinc-200 text-black'}`} />
+                    <input
+                      type="text"
+                      value={securityForm.pin}
+                      onChange={e => setSecurityForm({ ...securityForm, pin: e.target.value })}
+                      placeholder="080012"
+                      className="w-full p-4 rounded-xl border-2 border-white/10 outline-none text-center text-2xl tracking-[0.3em] font-black bg-black text-[#C4B687] placeholder-white/20 focus:border-[#C4B687] transition-colors"
+                    />
                   </div>
                 </div>
               </div>
