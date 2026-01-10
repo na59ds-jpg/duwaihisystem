@@ -1,6 +1,7 @@
 /* 1. استيراد الخط المعتمد للهوية الملكية */
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
-@import "tailwindcss"; /* لضمان تفعيل كلاسات Tailwind مع التنسيقات المخصصة */
+@import "tailwindcss";
+/* لضمان تفعيل كلاسات Tailwind مع التنسيقات المخصصة */
 
 /* 2. الإعدادات الجذرية للنظام */
 :root {
@@ -13,31 +14,36 @@
   min-height: 100vh;
   margin: 0;
   padding: 0;
-  overflow-x: hidden; /* لمنع الاهتزاز الأفقي */
+  overflow-x: hidden;
+  /* لمنع الاهتزاز الأفقي */
 }
 
 body {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
-  background-color: transparent !important; /* للسماح لصورة الخلفية بالظهور من App.tsx */
+  background-color: transparent !important;
+  /* للسماح لصورة الخلفية بالظهور من App.tsx */
   font-family: 'Cairo', sans-serif !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  scrollbar-gutter: stable; /* يمنع قفز المحتوى عند ظهور السكرول بار */
+  scrollbar-gutter: stable;
+  /* يمنع قفز المحتوى عند ظهور السكرول بار */
 }
 
 /* 3. تنسيق السكرول بار (هوية معادن الذهبية) */
 .custom-scrollbar::-webkit-scrollbar {
   width: 5px;
 }
+
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: #C4B687;
   border-radius: 20px;
-  border: 1px solid rgba(0,0,0,0.1);
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 /* 4. تأثير الزجاج المضبب الفخم (Glassmorphism) */
@@ -50,11 +56,16 @@ body {
 
 .dark .glass-card {
   background: rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(196, 182, 135, 0.1); /* لمسة ذهبية خفيفة للحدود */
+  border: 1px solid rgba(196, 182, 135, 0.1);
+  /* لمسة ذهبية خفيفة للحدود */
 }
 
 /* 5. تحسينات النصوص والعناوين (وزن 900 للهيبة) */
-h1, h2, h3, h4, .font-black {
+h1,
+h2,
+h3,
+h4,
+.font-black {
   letter-spacing: -0.02em;
   font-weight: 900 !important;
   font-family: 'Cairo', sans-serif !important;
@@ -62,8 +73,15 @@ h1, h2, h3, h4, .font-black {
 
 /* 6. تأثيرات الأنيميشن (دخول ناعم للواجهات) */
 @keyframes slideUpFade {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-view {
@@ -88,13 +106,15 @@ thead th {
   top: 0;
   z-index: 20;
   backdrop-filter: blur(15px);
-  background: rgba(15, 23, 42, 0.8); /* توافق مع ألوان الهيدر في الإدارة */
+  background: rgba(15, 23, 42, 0.8);
+  /* توافق مع ألوان الهيدر في الإدارة */
 }
 
 /* 9. تأثيرات إضافية لبطاقات الإدارة */
 .admin-card-hover {
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
+
 .admin-card-hover:hover {
   border-color: #C4B687 !important;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
@@ -105,6 +125,28 @@ thead th {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* 11. FORCE VISIBILITY FOR INPUTS (Global Override) */
+input,
+select,
+textarea {
+  color: #FFFFFF !important;
+  font-size: 1.1rem !important;
+  /* Slightly larger as requested */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  /* Ensure visibility on light backgrounds too just in case */
+}
+
+input::placeholder {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Force password bullets to be visible */
+input[type="password"] {
+  font-family: verdana;
+  letter-spacing: 0.125em;
 }
