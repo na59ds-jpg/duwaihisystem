@@ -1,12 +1,19 @@
 /* 1. استيراد الخط المعتمد للهوية الملكية */
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
 @import "tailwindcss";
-/* لضمان تفعيل كلاسات Tailwind مع التنسيقات المخصصة */
 
 /* 2. الإعدادات الجذرية للنظام */
 :root {
   font-family: 'Cairo', sans-serif !important;
-  color-scheme: light dark;
+  color-scheme: light;
+  /* Force light mode base */
+
+  /* Royal Palette */
+  --royal-gold: #D4AF37;
+  --royal-gold-hover: #C5A028;
+  --metallic-silver: #E5E7EB;
+  --marble-white: #F9FAFB;
+  --text-main: #1F2937;
 }
 
 #root {
@@ -15,49 +22,60 @@
   margin: 0;
   padding: 0;
   overflow-x: hidden;
-  /* لمنع الاهتزاز الأفقي */
 }
 
 body {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
-  background-color: transparent !important;
-  /* للسماح لصورة الخلفية بالظهور من App.tsx */
+  background-color: var(--marble-white) !important;
+  background-image: url('/marble-bg.jpg');
+  /* New Background */
+  background-size: cover;
+  background-attachment: fixed;
   font-family: 'Cairo', sans-serif !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  scrollbar-gutter: stable;
-  /* يمنع قفز المحتوى عند ظهور السكرول بار */
+  color: var(--text-main);
 }
 
 /* 3. تنسيق السكرول بار (هوية معادن الذهبية) */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 5px;
+  width: 6px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
+  background: rgba(212, 175, 55, 0.05);
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #C4B687;
+  background: var(--royal-gold);
   border-radius: 20px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 /* 4. تأثير الزجاج المضبب الفخم (Glassmorphism) */
 .glass-card {
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(25px) saturate(180%);
+  -webkit-backdrop-filter: blur(25px) saturate(180%);
+  background: rgba(255, 255, 255, 0.65);
+  /* Lighter for white theme */
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  /* Gold border */
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 40px rgba(212, 175, 55, 0.25);
+  /* Gold glow */
+  border-color: var(--royal-gold);
 }
 
 .dark .glass-card {
-  background: rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(196, 182, 135, 0.1);
-  /* لمسة ذهبية خفيفة للحدود */
+  /* Keeping dark variant just in case, but user requested white */
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(212, 175, 55, 0.4);
 }
 
 /* 5. تحسينات النصوص والعناوين (وزن 900 للهيبة) */
@@ -66,12 +84,14 @@ h2,
 h3,
 h4,
 .font-black {
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   font-weight: 900 !important;
   font-family: 'Cairo', sans-serif !important;
+  color: #111827;
+  /* Dark text for contrast */
 }
 
-/* 6. تأثيرات الأنيميشن (دخول ناعم للواجهات) */
+/* 6. تأثيرات الأنيميشن */
 @keyframes slideUpFade {
   from {
     opacity: 0;
@@ -85,17 +105,18 @@ h4,
 }
 
 .animate-view {
-  animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: slideUpFade 0.7s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* 7. أزرار الرجوع والتبديل (توهج ذهبي) */
-.back-btn-glow:hover {
-  box-shadow: 0 0 20px rgba(196, 182, 135, 0.3);
-  transform: translateY(-2px);
-  transition: all 0.3s ease;
+/* 7. أزرار */
+.btn-royal {
+  background: linear-gradient(135deg, #D4AF37 0%, #AA8C2C 100%);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
 }
 
-/* 8. ضبط الجداول (تحسين الرؤية في الدارك مود) */
+/* 8. ضبط الجداول */
 table {
   border-spacing: 0;
   width: 100%;
@@ -106,49 +127,30 @@ thead th {
   top: 0;
   z-index: 20;
   backdrop-filter: blur(15px);
-  background: rgba(15, 23, 42, 0.8);
-  /* توافق مع ألوان الهيدر في الإدارة */
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text-main);
+  border-bottom: 2px solid var(--royal-gold);
 }
 
-/* 9. تأثيرات إضافية لبطاقات الإدارة */
-.admin-card-hover {
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.admin-card-hover:hover {
-  border-color: #C4B687 !important;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-}
-
-/* 10. إخفاء السكرول بار الافتراضي */
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-
-/* 11. FORCE VISIBILITY FOR INPUTS (Global Override) */
+/* 11. Overrides for Inputs (Adapted for Light Theme) */
 input,
 select,
 textarea {
-  background-color: #1a1a1a !important;
-  color: #FFFFFF !important;
-  font-size: 1.1rem !important;
-  /* Slightly larger as requested */
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  /* Ensure visibility on light backgrounds too just in case */
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  color: #1F2937 !important;
+  font-size: 1.05rem !important;
+  border: 1px solid #E5E7EB;
+  transition: all 0.3s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--royal-gold) !important;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15);
+  outline: none;
 }
 
 input::placeholder {
-  color: rgba(255, 255, 255, 0.6) !important;
-}
-
-/* Force password bullets to be visible */
-input[type="password"] {
-  font-family: verdana;
-  letter-spacing: 0.125em;
+  color: #9CA3AF !important;
 }
