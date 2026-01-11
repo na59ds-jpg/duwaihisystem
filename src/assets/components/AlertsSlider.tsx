@@ -23,12 +23,18 @@ export const AlertsSlider: React.FC<AlertsSliderProps> = ({ lang }) => {
 
     // 1. Fetch Alerts Real-time
     useEffect(() => {
-        const q = query(collection(db, "announcements"), orderBy("createdAt", "desc"));
+        const q = query(collection(db, "security_announcements"), orderBy("createdAt", "desc"));
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const fetchedAlerts = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })) as Alert[];
+            const fetchedAlerts = snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    ...data,
+                    // Fallback to primary title/content if EN version is missing
+                    titleEn: data.titleEn || data.title,
+                    contentEn: data.contentEn || data.content
+                };
+            }) as Alert[];
 
             // Filter only active if you have such filed, or just take all for now. 
             // Assuming all in DB are to be shown.
