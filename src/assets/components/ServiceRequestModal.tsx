@@ -179,7 +179,7 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
 
                             {/* Affiliation Dropdown */}
                             <div className="flex flex-col gap-1">
-                                <label className="text-xs font-black text-zinc-500 uppercase">Affiliation / التبعية</label>
+                                <label className="text-xs font-black text-zinc-500 uppercase">Department / الإدارة</label>
                                 <select
                                     className="p-3 border rounded-none bg-white font-bold text-sm outline-none focus:border-[#C4B687]"
                                     value={type.includes('contractor') ? formData.companyName : formData.dept}
@@ -219,7 +219,7 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
                                 <div key={fileKey} className="border-2 border-dashed border-zinc-300 rounded-xl p-4 flex flex-col items-center justify-center hover:bg-zinc-50 transition-colors">
                                     <span className="text-2xl mb-2">📂</span>
                                     <span className="text-[10px] font-bold uppercase text-zinc-600 mb-2">{fileKey.replace(/([A-Z])/g, ' $1')}</span>
-                                    <input type="file" accept="image/*" onChange={(e) => handleFileChange(fileKey, e)} className="text-[10px] w-full file:mr-2 file:py-1 file:px-2 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#C4B687]/10 file:text-[#C4B687] hover:file:bg-[#C4B687]/20" />
+                                    <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => handleFileChange(fileKey, e)} className="text-[10px] w-full file:mr-2 file:py-1 file:px-2 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#C4B687]/10 file:text-[#C4B687] hover:file:bg-[#C4B687]/20" />
                                 </div>
                             ))}
                         </div>
