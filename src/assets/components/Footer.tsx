@@ -26,9 +26,9 @@ export const Footer: React.FC<FooterProps> = ({ lang }) => {
 
                 {/* Logos */}
                 <div className="flex items-center gap-6 opacity-90">
-                    {/* Ma'aden Logo (Assuming generic placeholder logic or text if image missing) */}
+                    {/* Maaden Logo (Assuming generic placeholder logic or text if image missing) */}
                     <div className="flex flex-col items-center">
-                        <span className="text-2xl font-black text-[var(--royal-gold)] tracking-widest">MA'ADEN</span>
+                        <span className="text-2xl font-black text-[var(--royal-gold)] tracking-widest">MAADEN</span>
                         <span className="text-[10px] text-[var(--text-main)] font-bold tracking-[0.3em]">SAUDI ARABIA</span>
                     </div>
 

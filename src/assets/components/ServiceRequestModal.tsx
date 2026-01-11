@@ -349,7 +349,7 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
                     {/* Official Letterhead */}
                     <div className="flex justify-between items-center border-b-2 border-[#C4B687] pb-6 mb-8">
                         <div className="text-left">
-                            <h1 className="text-2xl font-bold uppercase tracking-widest text-[#C4B687]">MA'ADEN <span className="text-zinc-400">|</span> Gold</h1>
+                            <h1 className="text-2xl font-bold uppercase tracking-widest text-[#C4B687]">MAADEN <span className="text-zinc-400">|</span> Gold</h1>
                             <p className="text-xs text-zinc-500 font-bold mt-1">Al Duwaihi Gold Mine - Security Department</p>
                         </div>
                         <div className="text-right">
