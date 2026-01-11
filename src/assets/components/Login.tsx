@@ -228,6 +228,21 @@ export function Login() {
       <div className="fixed inset-0 bg-grid-pattern opacity-10 pointer-events-none"></div>
       <div className="fixed inset-0 bg-black/40 pointer-events-none"></div>
 
+      {/* Decorative Luxury Lines */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        {/* Top Section Lines */}
+        <div className="absolute top-[15%] left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#C4B687]/40 to-transparent"></div>
+        <div className="absolute top-[16%] left-0 w-full h-[2px] bg-black/80 blur-[1px]"></div>
+
+        {/* Bottom Section Lines */}
+        <div className="absolute bottom-[20%] left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#C4B687]/30 to-transparent"></div>
+        <div className="absolute bottom-[19%] left-0 w-full h-[3px] bg-black/60 blur-[2px]"></div>
+
+        {/* Vertical Accents (Optional subtle connects) */}
+        <div className="absolute top-0 right-[15%] w-[1px] h-full bg-gradient-to-b from-transparent via-[#C4B687]/5 to-transparent"></div>
+        <div className="absolute top-0 left-[15%] w-[1px] h-full bg-gradient-to-b from-transparent via-[#C4B687]/5 to-transparent"></div>
+      </div>
+
       {/* Header */}
       <header className={`backdrop-blur-xl border-b p-6 flex justify-between items-center px-10 md:px-20 z-20 shadow-xl transition-all ${theme === 'dark' ? 'bg-black/60 border-[#C4B687]/20' : 'bg-black/80 border-zinc-800'}`}>
         <div className="flex items-center gap-6">
