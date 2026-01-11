@@ -37,16 +37,55 @@ export function Login() {
   const [supportType, setSupportType] = useState<"tech" | "security">("tech");
   const [ticket, setTicket] = useState<TicketData>({ name: "", empId: "", nationalId: "", message: "", issueType: "" });
 
-  // جلب الأقسام والشركات ديناميكياً دائماً (Dropdowns for Services)
+  // Security & Announcements State
+  const [vipPin, setVipPin] = useState("1990"); // Default fallback
+  const [adminCreds, setAdminCreds] = useState({ user: "admin", pass: "admin123" });
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [currentAnnounce, setCurrentAnnounce] = useState(0);
+
+  // 1. DATA KIOSK: Fetch All Static Data on Mount
   useEffect(() => {
-    // We always need this now for the Service Requests
-    const unsub = onSnapshot(collection(db, "structure"), (snap) => {
+    // A. Fetch Structure (Depts/Companies)
+    const unsubStruct = onSnapshot(collection(db, "structure"), (snap) => {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as StructureItem));
       setDepartments(data.filter((i) => i.type === "dept"));
       setCompanies(data.filter((i) => i.type === "comp"));
     });
-    return () => unsub();
+
+    // B. Fetch Security Config (VIP PIN)
+    const fetchConfig = async () => {
+      try {
+        const snap = await getDoc(doc(db, "system_settings", "config"));
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data.vip_pin) setVipPin(data.vip_pin);
+          if (data.username && data.password) setAdminCreds({ user: data.username, pass: data.password });
+        }
+      } catch (e) { console.error("Config Fetch Error", e); }
+    };
+    fetchConfig();
+
+    // C. Fetch Live Announcements
+    // C. Fetch Live Announcements
+    const unsubAnnounce = onSnapshot(query(collection(db, "security_announcements")), (snap) => {
+      // Sort locally
+      const data = snap.docs.map(d => d.data());
+      // Sort by priority High first
+      data.sort((a: any, _b: any) => (a.priority === 'High' ? -1 : 1));
+      setAnnouncements(data);
+    });
+
+    return () => { unsubStruct(); unsubAnnounce(); };
   }, []);
+
+  // Announcement Rotator
+  useEffect(() => {
+    if (announcements.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentAnnounce(prev => (prev + 1) % announcements.length);
+    }, 5000); // Cycle every 5 seconds
+    return () => clearInterval(interval);
+  }, [announcements]);
 
   const handleOpenService = (type: string) => {
     setServiceType(type);
@@ -58,20 +97,10 @@ export function Login() {
     e.preventDefault(); setLoading(true); setError("");
 
     try {
-      // Fetch Security Config from Firestore
-      const docRef = doc(db, "system_settings", "config");
-      const snap = await getDoc(docRef);
-
-      let adminUser = "admin";
-      let adminPass = "admin123";
-      let adminPin = "1990";
-
-      if (snap.exists()) {
-        const data = snap.data();
-        if (data.username) adminUser = data.username;
-        if (data.password) adminPass = data.password;
-        if (data.vip_pin) adminPin = data.vip_pin;
-      }
+      // Pre-fetched credentials (Instant Access)
+      const adminUser = adminCreds.user;
+      const adminPass = adminCreds.pass;
+      const adminPin = vipPin;
 
       // VIP PIN Login
       if (username.trim() === adminPin.trim()) {
@@ -212,18 +241,29 @@ export function Login() {
         </div>
       </header>
 
-      {/* Admin Alert Bar - Tajawal Font */}
-      <div className="w-full bg-[#C4B687]/10 border-b border-[#C4B687]/20 py-3 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full bg-[#C4B687]/5 animate-pulse"></div>
-        <div className="max-w-7xl mx-auto px-6 flex items-center justify-center gap-3 relative z-10">
-          <span className="text-xl">📢</span>
-          <p className={`text-sm font-bold text-[#C4B687] text-center font-['Tajawal'] tracking-wide`}>
-            {isRTL
-              ? "تنبيه إداري: يرجى التأكد من استكمال كافة المرفقات المطلوبة لضمان سرعة الإجراء."
-              : "Admin Notice: Please ensure all required attachments are uploaded for faster processing."}
-          </p>
+      {/* Admin Alert Bar - Dynamic & Autoscroll */}
+      {announcements.length > 0 && (
+        <div className="w-full bg-[#C4B687]/10 border-b border-[#C4B687]/20 py-3 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-full bg-[#C4B687]/5 animate-pulse"></div>
+          <div className="max-w-7xl mx-auto px-6 flex items-center justify-center gap-3 relative z-10">
+            <span className="text-xl animate-bounce">📢</span>
+
+            <div className="relative h-6 w-full max-w-2xl overflow-hidden">
+              {announcements.map((ann, idx) => (
+                <div key={idx} className={`absolute top-0 left-0 w-full transition-all duration-700 ease-in-out flex items-center justify-center gap-2
+                        ${idx === currentAnnounce ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}
+                     `}>
+                  {ann.priority === 'High' && <span className="bg-red-600 text-white text-[9px] px-2 py-0.5 rounded animate-pulse">URGENT</span>}
+                  <p className={`text-sm font-bold text-[#C4B687] text-center font-['Tajawal'] tracking-wide truncate`}>
+                    {ann.content || ann.title}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+          </div>
         </div>
-      </div>
+      )}
 
       <main className="flex-1 flex flex-col items-center justify-center z-10 p-6 w-full max-w-[1600px] mx-auto py-20">
 
