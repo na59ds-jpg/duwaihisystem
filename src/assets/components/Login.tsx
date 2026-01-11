@@ -169,16 +169,17 @@ export function Login() {
   };
 
   return (
-    <div className={`min-h-screen flex flex-col font-['Cairo'] relative transition-colors duration-700 ${theme === 'dark' ? 'text-white' : 'text-zinc-900'} bg-gradient-to-br from-slate-900 via-[#0a0a0a] to-black`} dir={isRTL ? "rtl" : "ltr"}>
+    <div className={`min-h-screen flex flex-col font-['Cairo'] relative transition-colors duration-700 ${theme === 'dark' ? 'text-white' : 'text-zinc-900'} bg-zinc-900`} dir={isRTL ? "rtl" : "ltr"}>
 
       {/* Background Effects */}
       <div className="fixed inset-0 bg-grid-pattern opacity-10 pointer-events-none"></div>
       <div className="fixed inset-0 bg-black/40 pointer-events-none"></div>
 
       {/* Decorative Luxury Lines - Cleaned up */}
-      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden opacity-30">
-        <div className="absolute top-[10%] left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#C4B687]/20 to-transparent"></div>
-        <div className="absolute bottom-[10%] left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#C4B687]/20 to-transparent"></div>
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden opacity-20">
+        <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-30 mix-blend-overlay"></div>
+        <div className="absolute top-[10%] left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#C4B687]/10 to-transparent"></div>
+        <div className="absolute bottom-[10%] left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#C4B687]/10 to-transparent"></div>
       </div>
 
       {/* Header */}
@@ -206,6 +207,19 @@ export function Login() {
           </button>
         </div>
       </header>
+
+      {/* Admin Alert Bar - Tajawal Font */}
+      <div className="w-full bg-[#C4B687]/10 border-b border-[#C4B687]/20 py-3 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full bg-[#C4B687]/5 animate-pulse"></div>
+        <div className="max-w-7xl mx-auto px-6 flex items-center justify-center gap-3 relative z-10">
+          <span className="text-xl">📢</span>
+          <p className={`text-sm font-bold text-[#C4B687] text-center font-['Tajawal'] tracking-wide`}>
+            {isRTL
+              ? "تنبيه إداري: يرجى التأكد من استكمال كافة المرفقات المطلوبة لضمان سرعة الإجراء."
+              : "Admin Notice: Please ensure all required attachments are uploaded for faster processing."}
+          </p>
+        </div>
+      </div>
 
       <main className="flex-1 flex flex-col items-center justify-center z-10 p-6 w-full max-w-[1600px] mx-auto py-20">
 
@@ -239,54 +253,69 @@ export function Login() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-6xl mx-auto">
-            {/* Employee Card */}
-            <ServiceCard
-              title="Employee Card"
-              titleAr="إصدار بطاقة موظف"
-              icon={<svg className="w-12 h-12 text-[#C4B687]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0c0 .884-.56 1.636-1.323 1.995m4.638-1.995a2.002 2.002 0 01-1.323-1.995m0 0h.01M12 12h.01M15 15h.01M9 15h.01M9 12h.01M15 12h.01" /></svg>}
-              onClick={() => handleOpenService('employee_card')}
-            />
 
-            {/* Contractor Card */}
+            {/* 1. Employee Private Vehicle */}
             <ServiceCard
-              title="Contractor Card"
-              titleAr="إصدار بطاقة مقاول"
-              icon={<svg className="w-12 h-12 text-[#C4B687]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>}
-              onClick={() => handleOpenService('contractor_card')}
-            />
-
-            {/* Private Vehicle */}
-            <ServiceCard
-              title="Private Vehicle"
-              titleAr="تصريح مركبة خاصة"
-              icon={<svg className="w-12 h-12 text-[#C4B687]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 012-2v0m2 0a2 2 0 012 2v0m2 0a2 2 0 012 2v0m2 0a2 2 0 012 2v0" /></svg>}
+              title="Employee Private Vehicle"
+              titleAr="مركبة موظف خاصة"
+              icon={<svg className="w-12 h-12 text-[#C4B687]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>}
               onClick={() => handleOpenService('private_vehicle')}
             />
 
-            {/* Company Vehicle */}
+            {/* 2. Employee Company Vehicle */}
             <ServiceCard
-              title="Company Vehicle"
-              titleAr="تصريح مركبة شركة"
+              title="Employee Company Vehicle"
+              titleAr="مركبة موظف شركة"
               icon={<svg className="w-12 h-12 text-[#C4B687]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m8-2a2 2 0 100-4 2 2 0 000 4zm-2-2a2 2 0 100-4 2 2 0 000 4zm0-6a2 2 0 100-4 2 2 0 000 4zm2 2a2 2 0 100-4 2 2 0 000 4zm4-6a2 2 0 100-4 2 2 0 000 4zM7 21a2 2 0 00-2-2V5a2 2 0 002-2h10a2 2 0 002 2v14a2 2 0 00-2 2h-10z" /></svg>}
               onClick={() => handleOpenService('company_vehicle')}
             />
 
-            {/* Contractor Vehicle */}
+            {/* 3. Contractor Private Vehicle */}
             <ServiceCard
-              title="Contractor Vehicle"
-              titleAr="تصريح مركبة مقاول"
+              title="Contractor Private Vehicle"
+              titleAr="مركبة مقاول خاصة"
+              icon={<svg className="w-12 h-12 text-[#C4B687]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 012-2v0m2 0a2 2 0 012 2v0m2 0a2 2 0 012 2v0m2 0a2 2 0 012 2v0" /></svg>}
+              onClick={() => handleOpenService('private_vehicle')}
+            />
+
+            {/* 4. Contractor Company Vehicle */}
+            <ServiceCard
+              title="Contractor Company Vehicle"
+              titleAr="مركبة مقاول شركة"
               icon={<svg className="w-12 h-12 text-[#C4B687]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
               onClick={() => handleOpenService('contractor_vehicle')}
             />
 
-            {/* Inquiry */}
+            {/* 5. Employee Card */}
             <ServiceCard
-              title="Request Inquiry"
-              titleAr="استعلام عن طلب"
-              icon={<svg className="w-12 h-12 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>}
-              onClick={() => handleOpenService('inquiry')}
-              isInquiry
+              title="Employee Card"
+              titleAr="بطاقة موظف"
+              icon={<svg className="w-12 h-12 text-[#C4B687]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0c0 .884-.56 1.636-1.323 1.995m4.638-1.995a2.002 2.002 0 01-1.323-1.995m0 0h.01M12 12h.01M15 15h.01M9 15h.01M9 12h.01M15 12h.01" /></svg>}
+              onClick={() => handleOpenService('employee_card')}
             />
+
+            {/* 6. Contractor Card */}
+            <ServiceCard
+              title="Contractor Card"
+              titleAr="بطاقة مقاول"
+              icon={<svg className="w-12 h-12 text-[#C4B687]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>}
+              onClick={() => handleOpenService('contractor_card')}
+            />
+
+          </div>
+
+          {/* 7. Inquiry Button - Separate */}
+          <div className="mt-10 flex justify-center">
+            <button
+              onClick={() => handleOpenService('inquiry')}
+              className="group relative px-12 py-4 bg-white/5 border border-white/10 rounded-full hover:bg-[#C4B687] transition-all duration-300 flex items-center gap-3 backdrop-blur-md shadow-2xl hover:shadow-[#C4B687]/30"
+            >
+              <span className="text-xl group-hover:text-black text-white/70 transition-colors">🔍</span>
+              <div className="text-left">
+                <p className="text-xs font-bold text-white/50 group-hover:text-black/60 uppercase tracking-widest">Track Status</p>
+                <p className="text-lg font-black text-white group-hover:text-black font-['Tajawal']">استعلام عن طلب</p>
+              </div>
+            </button>
           </div>
         </div>
 
@@ -462,12 +491,12 @@ function ServiceCard({ title, titleAr, icon, onClick, isInquiry = false }: any) 
   return (
     <div
       onClick={onClick}
-      className={`relative overflow-hidden group p-8 rounded-2xl border transition-all duration-300 cursor-pointer flex flex-col justify-between h-48
+      className={`relative overflow-hidden group p-8 rounded-3xl border transition-all duration-500 cursor-pointer flex flex-col justify-between h-48
         ${isInquiry
           ? 'bg-white/5 border-white/10 hover:border-white/30 hover:bg-white/10'
-          : 'bg-white/5 border-[#C4B687]/30 hover:border-[#C4B687] hover:bg-[#C4B687]/5'
+          : 'bg-white/5 border-[#C4B687]/20 hover:border-[#C4B687] hover:bg-[#C4B687]/10'
         }
-        backdrop-blur-md shadow-lg hover:shadow-[0_0_30px_rgba(196,182,135,0.1)]
+        backdrop-blur-xl shadow-xl hover:shadow-[0_0_40px_rgba(196,182,135,0.15)] hover:-translate-y-1
       `}
     >
       <div className="flex justify-between items-start z-10">

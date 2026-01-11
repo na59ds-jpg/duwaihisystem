@@ -130,7 +130,7 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4 overflow-y-auto">
-            <div className={`w-full max-w-4xl bg-[#f8f9fa] rounded-none shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden border-t-8 ${config.color} animate-in zoom-in-95 duration-300`}>
+            <div className={`w-full max-w-4xl bg-[#f8f9fa] rounded-3xl shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden border-t-8 ${config.color} animate-in zoom-in-95 duration-300`}>
 
                 {/* Header */}
                 <div className="p-6 border-b flex justify-between items-start bg-zinc-100">
@@ -181,7 +181,7 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
                             <div className="flex flex-col gap-1">
                                 <label className="text-xs font-black text-zinc-500 uppercase">Department / الإدارة</label>
                                 <select
-                                    className="p-3 border rounded-none bg-white font-bold text-sm outline-none focus:border-[#C4B687]"
+                                    className="p-3 border rounded-xl bg-white font-bold text-sm outline-none focus:border-[#C4B687]"
                                     value={type.includes('contractor') ? formData.companyName : formData.dept}
                                     onChange={(e: React.ChangeEvent<HTMLSelectElement>) => type.includes('contractor') ? setFormData({ ...formData, companyName: e.target.value }) : setFormData({ ...formData, dept: e.target.value })}
                                 >
@@ -343,7 +343,7 @@ const Input = ({ label, dir = 'ltr', ...props }: any) => (
         <input
             {...props}
             dir={dir}
-            className={`p-3 border-b-2 border-zinc-200 bg-transparent outline-none focus:border-[#C4B687] transition-colors font-bold text-zinc-800 placeholder-zinc-300 ${dir === 'rtl' ? 'font-serif' : 'font-mono'}`}
+            className={`p-3 border-b-2 border-zinc-200 bg-zinc-50 rounded-xl outline-none focus:border-[#C4B687] focus:bg-white transition-all font-bold text-zinc-800 placeholder-zinc-300 ${dir === 'rtl' ? 'font-serif' : 'font-mono'}`}
         />
     </div>
 );
