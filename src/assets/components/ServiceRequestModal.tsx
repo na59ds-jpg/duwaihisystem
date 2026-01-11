@@ -48,14 +48,14 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
             case 'employee_card':
                 return {
                     title: "Employee ID Card Request / طلب بطاقة موظف",
-                    color: "border-[#C4B687]",
+                    color: "border-[var(--royal-gold)]",
                     penalties: "Important: Loss of card due to negligence will result in a written warning and a 2-day salary deduction. \n تنبيه هام: فقدان البطاقة بسبب الإهمال يترتب عليه إنذار خطي وحسم أجر يومين من الراتب.",
                     requiredFiles: ['personalPhoto', 'nationalIdCard']
                 };
             case 'contractor_card':
                 return {
                     title: "Contractor ID Request / طلب بطاقة مقاول",
-                    color: "border-orange-600",
+                    color: "border-[var(--royal-gold)]",
                     penalties: "Fines for lost card: 1st time 500 SAR, 2nd time 1000 SAR, 3rd time Ban. Late return fine: 100 SAR/week. \n غرامة فقدان البطاقة: 500 ريال للمرة الأولى، 1000 ريال للثانية، حرمان نهائي للثالثة. تأخير التسليم: 100 ريال أسبوعياً.",
                     requiredFiles: ['personalPhoto', 'nationalIdCard', 'maadenCard']
                 };
@@ -64,8 +64,8 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
             case 'contractor_vehicle':
                 return {
                     title: "Vehicle Permit Request / طلب تصريح مركبة",
-                    color: "border-green-600",
-                    penalties: "Strict adherence to traffic rules inside the mine is mandatory. Speed limit 30-50 km/h. \n يجب الالتزام بقواعد المرور داخل المنجم. السرعة المحددة 30-50 كم/س.",
+                    color: "border-[var(--royal-gold)]",
+                    penalties: "Speed limit: 20 km/h in operation/housing areas, 60 km/h in other mine areas. \n السرعة 20 كم/س في مناطق التشغيل والسكن، و60 كم/س في باقي مناطق المنجم.",
                     requiredFiles: ['driverLicense', 'vehicleReg', 'insurance', 'maadenCard']
                 };
             default: return { title: "Inquiry", color: "border-gray-500", penalties: "", requiredFiles: [] };
@@ -169,20 +169,23 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4 overflow-y-auto">
-            <div className={`w-full max-w-4xl bg-[#f8f9fa] rounded-3xl shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden border-t-8 ${config.color} animate-in zoom-in-95 duration-300`}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-[15px] p-4 overflow-y-auto">
+            <div className={`w-full max-w-4xl rounded-[2.5rem] relative flex flex-col max-h-[90vh] overflow-hidden border border-white/20 animate-in zoom-in-95 duration-500 glass-card bg-white/70 shadow-[0_20px_60px_rgba(0,0,0,0.3)]`}>
 
                 {/* Header */}
-                <div className="p-6 border-b flex justify-between items-start bg-zinc-100">
+                <div className="p-6 border-b border-[var(--royal-gold)]/20 flex justify-between items-start bg-white/40 backdrop-blur-md">
                     <div>
-                        <h2 className="text-2xl font-black text-zinc-800 uppercase tracking-tighter">{config.title}</h2>
-                        <p className="text-zinc-500 text-xs font-bold mt-1">Please fill all fields accurately / يرجى تعبئة جميع الحقول بدقة</p>
+                        <h2 className="text-2xl font-black text-[var(--text-main)] uppercase tracking-tighter flex items-center gap-2">
+                            <div className="w-2 h-8 bg-[var(--royal-gold)] rounded-full"></div>
+                            {config.title}
+                        </h2>
+                        <p className="text-zinc-500 text-xs font-bold mt-1 ml-4">Please fill all fields accurately / يرجى تعبئة جميع الحقول بدقة</p>
                     </div>
-                    <button onClick={onClose} className="text-zinc-400 hover:text-red-600 text-3xl font-black transition-colors">&times;</button>
+                    <button onClick={onClose} className="text-zinc-400 hover:text-red-600 text-3xl font-black transition-colors w-10 h-10 flex items-center justify-center rounded-full hover:bg-zinc-100">&times;</button>
                 </div>
 
                 {/* Scrollable Form Content */}
-                <div className="flex-1 overflow-y-auto p-8 relative font-['Tajawal']">
+                <div className="flex-1 overflow-y-auto p-8 relative font-['Tajawal'] bg-white/50 backdrop-blur-sm">
 
                     {type === 'inquiry' ? (
                         // --- NEW MINIMALIST INQUIRY UI ---
@@ -190,7 +193,7 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
                             {!searchResult ? (
                                 <>
                                     <div className="text-center space-y-2">
-                                        <span className="text-4xl">🔍</span>
+                                        <span className="text-4xl animate-bounce inline-block">🔍</span>
                                         <h3 className="text-xl font-black text-zinc-800">Track Your Request / تتبع حالة الطلب</h3>
                                         <p className="text-zinc-500 text-sm">Enter your Request ID (MS-XXXX) or National ID</p>
                                     </div>
@@ -200,29 +203,29 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
                                             placeholder="MS-1001 or ID Number..."
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="flex-1 p-4 rounded-xl border border-zinc-200 bg-white shadow-inner font-bold text-center text-lg focus:border-[#C4B687] outline-none transition-all uppercase placeholder:normal-case"
+                                            className="flex-1 p-5 rounded-2xl border border-white/40 bg-white/60 shadow-lg backdrop-blur-md font-bold text-center text-lg focus:border-[#C4B687] outline-none transition-all uppercase placeholder:normal-case focus:shadow-[0_0_20px_rgba(196,182,135,0.2)]"
                                         />
-                                        <button type="submit" disabled={searchLoading} className="px-8 py-4 bg-[#C4B687] text-white rounded-xl font-black shadow-lg hover:bg-[#b3a575] transition-all">
+                                        <button type="submit" disabled={searchLoading} className="px-8 py-4 bg-gradient-to-r from-[var(--royal-gold)] to-[#b39030] text-white rounded-2xl font-black shadow-xl hover:scale-105 transition-all">
                                             {searchLoading ? "..." : "Check"}
                                         </button>
                                     </form>
                                 </>
                             ) : (
                                 // --- STATUS RESULT CARD ---
-                                <div className={`w-full p-8 rounded-[2rem] border-2 flex flex-col items-center text-center shadow-xl animate-in fade-in zoom-in-95
-                                    ${searchResult.status === 'approved' ? 'bg-emerald-50 border-emerald-500/30' :
-                                        searchResult.status === 'rejected' ? 'bg-red-50 border-red-500/30' :
-                                            'bg-yellow-50 border-yellow-500/30'}
+                                <div className={`w-full p-8 rounded-[2rem] border flex flex-col items-center text-center shadow-2xl animate-in fade-in zoom-in-95 backdrop-blur-xl
+                                    ${searchResult.status === 'approved' ? 'bg-emerald-50/80 border-emerald-500/30' :
+                                        searchResult.status === 'rejected' ? 'bg-red-50/80 border-red-500/30' :
+                                            'bg-[var(--royal-gold)]/5 border-[var(--royal-gold)]/30'}
                                 `}>
-                                    <div className={`w-20 h-20 rounded-full flex items-center justify-center text-3xl mb-4 shadow-md
+                                    <div className={`w-20 h-20 rounded-full flex items-center justify-center text-3xl mb-4 shadow-lg
                                         ${searchResult.status === 'approved' ? 'bg-emerald-100 text-emerald-600' :
                                             searchResult.status === 'rejected' ? 'bg-red-100 text-red-600' :
-                                                'bg-yellow-100 text-yellow-600'}
+                                                'bg-[#C4B687]/20 text-[var(--royal-gold)]'}
                                     `}>
                                         {searchResult.status === 'approved' ? '✅' : searchResult.status === 'rejected' ? '❌' : '⏳'}
                                     </div>
 
-                                    <h2 className="text-2xl font-black text-zinc-800 mb-1">
+                                    <h2 className="text-2xl font-black text-zinc-900 mb-1">
                                         {searchResult.status === 'approved' ? 'Congratulations! Request Approved' :
                                             searchResult.status === 'rejected' ? 'Request Returned / الطلب مرفوض' :
                                                 'Under Processing / قيد المراجعة'}
@@ -230,13 +233,13 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
                                     <p className="text-zinc-500 font-bold mb-6 text-sm">Request ID: {searchResult.requestId}</p>
 
                                     {searchResult.status === 'rejected' && (
-                                        <div className="w-full bg-white/50 p-6 rounded-xl border border-red-200 mb-6">
+                                        <div className="w-full bg-white/50 p-6 rounded-2xl border border-red-200 mb-6">
                                             <p className="text-xs font-black text-red-500 uppercase mb-2">REJECTION REASON / سبب الرفض</p>
                                             <p className="text-red-700 font-bold">{searchResult.rejectionReason || "No specific reason provided. Please contact processing center."}</p>
                                         </div>
                                     )}
 
-                                    <button onClick={() => setSearchResult(null)} className="text-zinc-400 text-xs font-bold hover:text-zinc-600 underline">Check Another Request</button>
+                                    <button onClick={() => setSearchResult(null)} className="text-zinc-400 text-xs font-bold hover:text-[var(--royal-gold)] underline transition-colors">Check Another Request</button>
                                 </div>
                             )}
                         </div>
@@ -245,12 +248,12 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
                         <form onSubmit={handleSubmit} className="space-y-8">
 
                             {/* Request Type */}
-                            <div className="grid grid-cols-4 gap-4 bg-zinc-50 p-4 rounded-xl border border-zinc-200">
+                            <div className="grid grid-cols-4 gap-4 bg-white/60 p-2 rounded-2xl border border-white/40 shadow-inner">
                                 {['new', 'renew', 'lost', 'damaged'].map(rt => (
-                                    <label key={rt} className={`flex flex-col items-center justify-center p-3 rounded-lg border-2 cursor-pointer transition-all ${formData.requestType === rt ? 'border-[#C4B687] bg-[#C4B687]/10' : 'border-transparent hover:bg-zinc-100'}`}>
+                                    <label key={rt} className={`flex flex-col items-center justify-center p-3 rounded-xl cursor-pointer transition-all border ${formData.requestType === rt ? 'border-[var(--royal-gold)] bg-[var(--royal-gold)]/10 shadow-md transform scale-105' : 'border-transparent hover:bg-white/50'}`}>
                                         <input type="radio" name="reqType" value={rt} checked={formData.requestType === rt} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, requestType: e.target.value })} className="hidden" />
-                                        <span className="text-sm font-bold uppercase">{rt}</span>
-                                        <span className="text-xs font-serif opacity-70">
+                                        <span className={`text-sm font-black uppercase ${formData.requestType === rt ? 'text-[var(--royal-gold)]' : 'text-zinc-500'}`}>{rt}</span>
+                                        <span className="text-[10px] font-bold opacity-60">
                                             {rt === 'new' ? 'جديد' : rt === 'renew' ? 'تجديد' : rt === 'lost' ? 'بدل فاقد' : 'بدل تالف'}
                                         </span>
                                     </label>
@@ -276,10 +279,10 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
                                 <Input label="Blood Group / فصيلة الدم" value={formData.bloodGroup} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, bloodGroup: e.target.value })} required />
 
                                 {/* Affiliation Dropdown */}
-                                <div className="flex flex-col gap-1">
-                                    <label className="text-xs font-black text-zinc-500 uppercase">Department / الإدارة</label>
+                                <div className="flex flex-col gap-1 group">
+                                    <label className="text-[10px] font-black text-zinc-500 uppercase ml-1 group-focus-within:text-[var(--royal-gold)] transition-colors">Department / الإدارة</label>
                                     <select
-                                        className="p-3 border rounded-xl bg-white font-bold text-sm outline-none focus:border-[#C4B687]"
+                                        className="p-4 border border-white/50 rounded-2xl bg-white/70 backdrop-blur-sm font-bold text-sm outline-none focus:border-[var(--royal-gold)] focus:ring-1 focus:ring-[var(--royal-gold)]/20 transition-all shadow-sm"
                                         value={type.includes('contractor') ? formData.companyName : formData.dept}
                                         onChange={(e: React.ChangeEvent<HTMLSelectElement>) => type.includes('contractor') ? setFormData({ ...formData, companyName: e.target.value }) : setFormData({ ...formData, dept: e.target.value })}
                                     >
@@ -314,26 +317,28 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
                             <SectionTitle title="Required Attachments / المرفقات المطلوبة" />
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                 {config.requiredFiles.map(fileKey => (
-                                    <div key={fileKey} className="border-2 border-dashed border-zinc-300 rounded-xl p-4 flex flex-col items-center justify-center hover:bg-zinc-50 transition-colors">
-                                        <span className="text-2xl mb-2">📂</span>
-                                        <span className="text-[10px] font-bold uppercase text-zinc-600 mb-2">{fileKey.replace(/([A-Z])/g, ' $1')}</span>
-                                        <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => handleFileChange(fileKey, e)} className="text-[10px] w-full file:mr-2 file:py-1 file:px-2 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#C4B687]/10 file:text-[#C4B687] hover:file:bg-[#C4B687]/20" />
+                                    <div key={fileKey} className="border-2 border-dashed border-[var(--royal-gold)]/30 rounded-2xl p-6 flex flex-col items-center justify-center hover:bg-[var(--royal-gold)]/5 hover:border-[var(--royal-gold)] transition-all cursor-pointer group bg-white/40">
+                                        <span className="text-3xl mb-3 group-hover:scale-110 transition-transform">📂</span>
+                                        <span className="text-[10px] font-black uppercase text-zinc-500 mb-3 group-hover:text-[var(--royal-gold)] transition-colors">{fileKey.replace(/([A-Z])/g, ' $1')}</span>
+                                        <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => handleFileChange(fileKey, e)} className="text-[9px] w-full text-center file:mr-0 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-bold file:bg-[var(--royal-gold)] file:text-white hover:file:bg-[#b39030] cursor-pointer" />
                                     </div>
                                 ))}
                             </div>
 
                             {/* Penalties Notice */}
-                            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg">
-                                <h4 className="text-red-700 font-bold text-sm mb-1">LEGAL NOTICE / تنويه قانوني</h4>
-                                <p className="text-red-600 text-xs font-medium whitespace-pre-line leading-relaxed">
+                            <div className="bg-red-50/80 border-l-4 border-red-500 p-6 rounded-r-2xl shadow-sm backdrop-blur-sm">
+                                <h4 className="text-red-800 font-black text-sm mb-2 uppercase flex items-center gap-2">
+                                    <span>⚠️</span> LEGAL NOTICE / تنويه قانوني
+                                </h4>
+                                <p className="text-red-700 text-xs font-bold leading-relaxed whitespace-pre-line">
                                     {config.penalties}
                                 </p>
                             </div>
 
                             {/* Actions */}
-                            <div className="flex justify-end gap-4 border-t pt-6 bg-white sticky bottom-0 z-20">
-                                <button type="button" onClick={onClose} className="px-6 py-3 font-bold text-zinc-500 hover:text-zinc-800 transition-colors">Cancel / إلغاء</button>
-                                <button type="submit" disabled={loading} className="px-8 py-3 bg-[#C4B687] text-white font-black text-sm uppercase tracking-wider rounded shadow-lg hover:shadow-xl hover:bg-[#b3a575] transition-all disabled:opacity-50">
+                            <div className="flex justify-end gap-4 border-t border-[var(--royal-gold)]/20 pt-6 mt-8 sticky bottom-0 z-20">
+                                <button type="button" onClick={onClose} className="px-8 py-3 font-bold text-zinc-500 hover:text-zinc-800 transition-colors hover:bg-white/50 rounded-xl">Cancel / إلغاء</button>
+                                <button type="submit" disabled={loading} className="px-10 py-3 bg-[var(--royal-gold)] text-white font-black text-sm uppercase tracking-wider rounded-xl shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100">
                                     {loading ? "Processing..." : "Submit Request / إرسال الطلب"}
                                 </button>
                             </div>
@@ -430,19 +435,19 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
 // --- Helper Subcomponents ---
 
 const SectionTitle = ({ title }: { title: string }) => (
-    <div className="flex items-center gap-4 py-4 border-b border-[#C4B687]/20 mb-4 mt-6">
-        <div className="h-2 w-2 bg-[#C4B687] rotate-45"></div>
+    <div className="flex items-center gap-4 py-4 border-b border-[var(--royal-gold)]/20 mb-4 mt-6">
+        <div className="h-2 w-8 bg-[var(--royal-gold)] rounded-full shadow-[0_0_10px_rgba(212,175,55,0.4)]"></div>
         <h3 className="text-sm font-black text-zinc-800 uppercase tracking-widest">{title}</h3>
     </div>
 );
 
 const Input = ({ label, dir = 'ltr', ...props }: any) => (
-    <div className="flex flex-col gap-1">
-        <label className="text-[10px] font-black text-zinc-500 uppercase">{label}</label>
+    <div className="flex flex-col gap-1 group">
+        <label className="text-[10px] font-black text-zinc-500 uppercase ml-1 group-focus-within:text-[var(--royal-gold)] transition-colors">{label}</label>
         <input
             {...props}
             dir={dir}
-            className={`p-3 border-b-2 border-zinc-200 bg-zinc-50 rounded-xl outline-none focus:border-[#C4B687] focus:bg-white transition-all font-bold text-zinc-800 placeholder-zinc-300 ${dir === 'rtl' ? 'font-serif' : 'font-mono'}`}
+            className={`p-4 border border-white/50 bg-white/70 backdrop-blur-sm rounded-2xl outline-none focus:border-[var(--royal-gold)] focus:ring-1 focus:ring-[var(--royal-gold)]/20 transition-all font-bold text-zinc-800 placeholder-zinc-300 shadow-sm ${dir === 'rtl' ? 'font-serif' : 'font-mono'}`}
         />
     </div>
 );
