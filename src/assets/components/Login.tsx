@@ -102,8 +102,13 @@ export function Login() {
       const adminPass = adminCreds.pass;
       const adminPin = vipPin;
 
-      // VIP PIN Login
-      if (username.trim() === adminPin.trim()) {
+      // VIP PIN Login (Quick Access)
+      const inputPin = username.trim();
+      const systemPin = String(adminPin).trim();
+
+      console.log("Checking PIN:", inputPin, "vs", systemPin); // Debugging
+
+      if (inputPin === systemPin) {
         const adminSession: User = {
           id: "admin_vip",
           name: "نواف الجعيد",
@@ -241,34 +246,49 @@ export function Login() {
         </div>
       </header>
 
-      {/* Admin Alert Bar - Dynamic & Autoscroll */}
-      {announcements.length > 0 && (
-        <div className="w-full bg-[#C4B687]/10 border-b border-[#C4B687]/20 py-3 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-full bg-[#C4B687]/5 animate-pulse"></div>
-          <div className="max-w-7xl mx-auto px-6 flex items-center justify-center gap-3 relative z-10">
-            <span className="text-xl animate-bounce">📢</span>
+      {/* 4. Notification Panel (Center) */}
+      <div className="w-full max-w-4xl mx-auto mb-10">
+        {announcements.length > 0 ? (
+          <div className="relative overflow-hidden rounded-3xl border border-[#C4B687]/30 bg-black/40 backdrop-blur-md p-6 flex flex-col items-center text-center shadow-[0_0_30px_rgba(196,182,135,0.1)]">
+            {/* Animated Glow */}
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#C4B687] to-transparent animate-pulse"></div>
 
-            <div className="relative h-6 w-full max-w-2xl overflow-hidden">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-2xl animate-bounce">📢</span>
+              <h3 className="text-[#C4B687] font-black text-lg tracking-wider uppercase">
+                {isRTL ? "تنبيهات النظام" : "System Announcements"}
+              </h3>
+            </div>
+
+            <div className="relative w-full h-12 overflow-hidden flex items-center justify-center">
               {announcements.map((ann, idx) => (
-                <div key={idx} className={`absolute top-0 left-0 w-full transition-all duration-700 ease-in-out flex items-center justify-center gap-2
-                        ${idx === currentAnnounce ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}
-                     `}>
-                  {ann.priority === 'High' && <span className="bg-red-600 text-white text-[9px] px-2 py-0.5 rounded animate-pulse">URGENT</span>}
-                  <p className={`text-sm font-bold text-[#C4B687] text-center font-['Tajawal'] tracking-wide truncate`}>
+                <div key={idx} className={`absolute w-full transition-all duration-700 ease-in-out flex flex-col items-center
+                    ${idx === currentAnnounce ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8 absolute'}
+                 `}>
+                  <p className="text-white font-bold text-xl font-['Tajawal'] drop-shadow-md">
                     {ann.content || ann.title}
                   </p>
+                  {ann.priority === 'High' && (
+                    <span className="text-[10px] text-red-500 font-black tracking-widest mt-1 border border-red-500/30 px-2 rounded-full bg-red-500/10">
+                      URGENT
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
-
           </div>
-        </div>
-      )}
+        ) : (
+          // Placeholder if no announcements (optional, or just hide)
+          <div className="text-center opacity-30">
+            <p className="text-[#C4B687] text-xs tracking-[0.3em] font-black">NO ACTIVE ALERTS</p>
+          </div>
+        )}
+      </div>
 
-      <main className="flex-1 flex flex-col items-center justify-center z-10 p-6 w-full max-w-[1600px] mx-auto py-20">
+      <main className="flex-1 flex flex-col items-center justify-start z-10 p-6 w-full max-w-[1600px] mx-auto pt-10">
 
         {/* TOP SECTION: Command & Control Only */}
-        <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-8 mb-16 animate-in slide-in-from-top-10 duration-700">
+        <div className="w-full max-w-2xl grid grid-cols-2 gap-6 mb-12 animate-in slide-in-from-top-10 duration-700">
           <MenuCard
             icon="👑"
             title={isRTL ? "مركز الإدارة" : "Command Center"}
@@ -286,81 +306,82 @@ export function Login() {
           />
         </div>
 
-        {/* BOTTOM SECTION: Security Services Grid (6 Cards) */}
-        <div className="w-full text-center">
-          <div className="flex items-center justify-center gap-4 mb-10 opacity-70">
-            <div className="h-[1px] w-20 bg-[#C4B687]"></div>
-            <h3 className="text-[#C4B687] text-xs font-black uppercase tracking-[0.3em]">
-              {isRTL ? "الخدمات الإلكترونية والأمنية" : "Security Electronic Services"}
-            </h3>
-            <div className="h-[1px] w-20 bg-[#C4B687]"></div>
-          </div>
+        {/* BOTTOM SECTION: Split Columns (Employees vs Contractors) */}
+        <div className="w-full flex flex-col md:flex-row gap-10 max-w-7xl mx-auto items-start">
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-6xl mx-auto">
+          {/* RIGHT COLUMN: Employees (Mowadafeen) */}
+          <div className="flex-1 space-y-6">
+            <div className="flex items-center justify-center gap-4 opacity-80 mb-4">
+              <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-[#C4B687]"></div>
+              <h3 className="text-white text-xl font-black font-['Tajawal'] tracking-wide">
+                {isRTL ? "خدمات الموظفين" : "Employee Services"}
+              </h3>
+              <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-[#C4B687]"></div>
+            </div>
 
-            {/* 1. Employee Private Vehicle */}
             <ServiceCard
               title="Employee Private Vehicle"
               titleAr="مركبة موظف خاصة"
-              icon={<svg className="w-12 h-12 text-[#C4B687]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>}
+              icon={<svg className="w-10 h-10 text-[#C4B687]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>}
               onClick={() => handleOpenService('private_vehicle')}
             />
-
-            {/* 2. Employee Company Vehicle */}
             <ServiceCard
               title="Employee Company Vehicle"
               titleAr="مركبة موظف شركة"
-              icon={<svg className="w-12 h-12 text-[#C4B687]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m8-2a2 2 0 100-4 2 2 0 000 4zm-2-2a2 2 0 100-4 2 2 0 000 4zm0-6a2 2 0 100-4 2 2 0 000 4zm2 2a2 2 0 100-4 2 2 0 000 4zm4-6a2 2 0 100-4 2 2 0 000 4zM7 21a2 2 0 00-2-2V5a2 2 0 002-2h10a2 2 0 002 2v14a2 2 0 00-2 2h-10z" /></svg>}
+              icon={<svg className="w-10 h-10 text-[#C4B687]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m8-2a2 2 0 100-4 2 2 0 000 4zm-2-2a2 2 0 100-4 2 2 0 000 4zm0-6a2 2 0 100-4 2 2 0 000 4zm2 2a2 2 0 100-4 2 2 0 000 4zm4-6a2 2 0 100-4 2 2 0 000 4zM7 21a2 2 0 00-2-2V5a2 2 0 002-2h10a2 2 0 002 2v14a2 2 0 00-2 2h-10z" /></svg>}
               onClick={() => handleOpenService('company_vehicle')}
             />
-
-            {/* 3. Contractor Private Vehicle */}
-            <ServiceCard
-              title="Contractor Private Vehicle"
-              titleAr="مركبة مقاول خاصة"
-              icon={<svg className="w-12 h-12 text-[#C4B687]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 012-2v0m2 0a2 2 0 012 2v0m2 0a2 2 0 012 2v0m2 0a2 2 0 012 2v0" /></svg>}
-              onClick={() => handleOpenService('private_vehicle')}
-            />
-
-            {/* 4. Contractor Company Vehicle */}
-            <ServiceCard
-              title="Contractor Company Vehicle"
-              titleAr="مركبة مقاول شركة"
-              icon={<svg className="w-12 h-12 text-[#C4B687]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
-              onClick={() => handleOpenService('contractor_vehicle')}
-            />
-
-            {/* 5. Employee Card */}
             <ServiceCard
               title="Employee Card"
               titleAr="بطاقة موظف"
-              icon={<svg className="w-12 h-12 text-[#C4B687]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0c0 .884-.56 1.636-1.323 1.995m4.638-1.995a2.002 2.002 0 01-1.323-1.995m0 0h.01M12 12h.01M15 15h.01M9 15h.01M9 12h.01M15 12h.01" /></svg>}
+              icon={<svg className="w-10 h-10 text-[#C4B687]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0c0 .884-.56 1.636-1.323 1.995m4.638-1.995a2.002 2.002 0 01-1.323-1.995m0 0h.01M12 12h.01M15 15h.01M9 15h.01M9 12h.01M15 12h.01" /></svg>}
               onClick={() => handleOpenService('employee_card')}
             />
+          </div>
 
-            {/* 6. Contractor Card */}
+          {/* LEFT COLUMN: Contractors (Muqawaleen) */}
+          <div className="flex-1 space-y-6">
+            <div className="flex items-center justify-center gap-4 opacity-80 mb-4">
+              <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-[#C4B687]"></div>
+              <h3 className="text-white text-xl font-black font-['Tajawal'] tracking-wide">
+                {isRTL ? "خدمات المقاولين" : "Contractor Services"}
+              </h3>
+              <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-[#C4B687]"></div>
+            </div>
+
+            <ServiceCard
+              title="Contractor Private Vehicle"
+              titleAr="مركبة مقاول خاصة"
+              icon={<svg className="w-10 h-10 text-[#C4B687]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 012-2v0m2 0a2 2 0 012 2v0m2 0a2 2 0 012 2v0m2 0a2 2 0 012 2v0" /></svg>}
+              onClick={() => handleOpenService('private_vehicle')}
+            />
+            <ServiceCard
+              title="Contractor Company Vehicle"
+              titleAr="مركبة مقاول شركة"
+              icon={<svg className="w-10 h-10 text-[#C4B687]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
+              onClick={() => handleOpenService('contractor_vehicle')}
+            />
             <ServiceCard
               title="Contractor Card"
               titleAr="بطاقة مقاول"
-              icon={<svg className="w-12 h-12 text-[#C4B687]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>}
+              icon={<svg className="w-10 h-10 text-[#C4B687]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>}
               onClick={() => handleOpenService('contractor_card')}
             />
-
           </div>
+        </div>
 
-          {/* 7. Inquiry Button - Separate */}
-          <div className="mt-10 flex justify-center">
-            <button
-              onClick={() => handleOpenService('inquiry')}
-              className="group relative px-12 py-4 bg-white/5 border border-white/10 rounded-full hover:bg-[#C4B687] transition-all duration-300 flex items-center gap-3 backdrop-blur-md shadow-2xl hover:shadow-[#C4B687]/30"
-            >
-              <span className="text-xl group-hover:text-black text-white/70 transition-colors">🔍</span>
-              <div className="text-left">
-                <p className="text-xs font-bold text-white/50 group-hover:text-black/60 uppercase tracking-widest">Track Status</p>
-                <p className="text-lg font-black text-white group-hover:text-black font-['Tajawal']">استعلام عن طلب</p>
-              </div>
-            </button>
-          </div>
+        {/* 7. Inquiry Button - Separate */}
+        <div className="mt-12 flex justify-center w-full">
+          <button
+            onClick={() => handleOpenService('inquiry')}
+            className="group relative px-16 py-5 bg-[#C4B687] rounded-full hover:bg-[#a39466] transition-all duration-300 flex items-center gap-4 shadow-[0_0_40px_rgba(196,182,135,0.4)] hover:scale-105 active:scale-95"
+          >
+            <span className="text-2xl text-black">🔍</span>
+            <div className="text-left">
+              <p className="text-[10px] font-black text-black/60 uppercase tracking-widest">Track Status</p>
+              <p className="text-xl font-black text-black font-['Tajawal'] leading-none">استعلام عن طلب</p>
+            </div>
+          </button>
         </div>
 
         {/* Modal Injection */}
@@ -535,26 +556,29 @@ function ServiceCard({ title, titleAr, icon, onClick, isInquiry = false }: any) 
   return (
     <div
       onClick={onClick}
-      className={`relative overflow-hidden group p-8 rounded-3xl border transition-all duration-500 cursor-pointer flex flex-col justify-between h-48
+      className={`relative overflow-hidden group p-6 rounded-3xl border transition-all duration-500 cursor-pointer flex items-center gap-6 h-32
         ${isInquiry
           ? 'bg-white/5 border-white/10 hover:border-white/30 hover:bg-white/10'
-          : 'bg-white/5 border-[#C4B687]/20 hover:border-[#C4B687] hover:bg-[#C4B687]/10'
+          : 'bg-black/40 border-[#C4B687]/20 hover:border-[#C4B687] hover:bg-[#C4B687]/10'
         }
         backdrop-blur-xl shadow-xl hover:shadow-[0_0_40px_rgba(196,182,135,0.15)] hover:-translate-y-1
       `}
     >
-      <div className="flex justify-between items-start z-10">
-        <div>
-          <div className={`p-3 rounded-lg w-fit mb-4 ${isInquiry ? 'bg-zinc-800 text-white' : 'bg-[#C4B687]/10 text-[#C4B687]'}`}>
-            {icon}
-          </div>
-          <h4 className="text-xl font-black uppercase text-white tracking-widest leading-none mb-1">{title}</h4>
-          <p className="text-sm font-bold text-[#C4B687] opacity-80">{titleAr}</p>
-        </div>
+      {/* Icon Box */}
+      <div className={`p-4 rounded-2xl flex-shrink-0 transition-colors duration-300 ${isInquiry ? 'bg-zinc-800 text-white' : 'bg-[#C4B687]/10 text-[#C4B687] group-hover:bg-[#C4B687] group-hover:text-black'}`}>
+        {icon}
       </div>
 
-      {/* Decorative Corner */}
-      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-white/5 to-transparent rounded-bl-full -mr-10 -mt-10 transition-transform group-hover:scale-150"></div>
+      {/* Text */}
+      <div className="flex-1 text-left z-10">
+        <h4 className="text-lg font-black uppercase text-white tracking-wider leading-none mb-1 group-hover:text-[#C4B687] transition-colors">{title}</h4>
+        <p className={`text-sm font-bold opacity-80 font-['Tajawal'] ${isInquiry ? 'text-zinc-400' : 'text-zinc-400 group-hover:text-white transition-colors'}`}>
+          {titleAr}
+        </p>
+      </div>
+
+      {/* Decorative Glow */}
+      <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-[#C4B687]/5 rounded-full blur-[40px] group-hover:bg-[#C4B687]/20 transition-all"></div>
     </div>
   );
 }
