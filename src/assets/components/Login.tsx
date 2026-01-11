@@ -169,11 +169,15 @@ export function Login() {
   };
 
   return (
-    <div className={`min-h-screen flex flex-col font-['Cairo'] relative transition-colors duration-700 ${theme === 'dark' ? 'text-white' : 'text-zinc-900'} bg-zinc-900`} dir={isRTL ? "rtl" : "ltr"}>
+    <div className={`min-h-screen flex flex-col font-['Cairo'] relative transition-colors duration-700 ${theme === 'dark' ? 'text-white' : 'text-zinc-900'} bg-[conic-gradient(at_top,_var(--tw-gradient-stops))] from-zinc-900 via-zinc-950 to-black`} dir={isRTL ? "rtl" : "ltr"}>
 
       {/* Background Effects */}
-      <div className="fixed inset-0 bg-grid-pattern opacity-10 pointer-events-none"></div>
-      <div className="fixed inset-0 bg-black/40 pointer-events-none"></div>
+      <div className="fixed inset-0 bg-grid-pattern opacity-[0.03] pointer-events-none"></div>
+
+      {/* THE ROYAL GLOW: Soft Gold Radial Gradient */}
+      <div className="fixed inset-0 z-0 pointer-events-none flex items-center justify-center overflow-hidden">
+        <div className="w-[1000px] h-[1000px] bg-[#C4B687] rounded-full opacity-[0.07] blur-[150px] translate-y-1/4"></div>
+      </div>
 
       {/* Decorative Luxury Lines - Cleaned up */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden opacity-20">

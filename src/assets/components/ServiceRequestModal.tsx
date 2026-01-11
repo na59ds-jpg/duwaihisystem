@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { db } from '../../firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import { uploadToCloudinary } from '../../utils/cloudinary';
 import { generateOfficialPDF } from '../../utils/pdfGenerator';
 import type { StructureItem } from '../../types';
@@ -103,9 +103,13 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
                 }
             }
 
-            // 3. Save to Firestore
-            const docRef = await addDoc(collection(db, "security_requests"), {
+            // 3. Generate Request ID (MS-XXXX)
+            const uniqueId = `MS-${Math.floor(1000 + Math.random() * 9000)}`;
+
+            // 4. Save to Firestore
+            await addDoc(collection(db, "security_requests"), {
                 type,
+                requestId: uniqueId, // New Unique ID
                 ...formData,
                 attachments,
                 status: "pending",
@@ -113,12 +117,13 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
                 submittedAt: new Date().toISOString(),
             });
 
-            // 4. Generate PDF
-            // We wait a moment for the 'OfficiaView' to be fully rendered with data if needed
+            // 5. Generate PDF
+            // We wait a moment for the 'OfficiaView' to be fully rendered with data including the new ID
+            setFormData((prev: any) => ({ ...prev, generatedId: uniqueId })); // Temp update for PDF view
             await new Promise(r => setTimeout(r, 500));
-            await generateOfficialPDF("official-form-view", `Request_${docRef.id}`);
+            await generateOfficialPDF("official-form-view", `Request_${uniqueId}`);
 
-            alert("Request Submitted Successfully & PDF Generated! \n تم تقديم الطلب بنجاح وتم تحميل نسخة PDF!");
+            alert(`Request Submitted Successfully! \n Your Request ID is: ${uniqueId} \n تم تقديم الطلب بنجاح! رقم طلبك هو: ${uniqueId}`);
             onClose();
 
         } catch (err) {
@@ -126,6 +131,41 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
             alert("Error submitting request / حدث خطأ أثناء تقديم الطلب");
         }
         setLoading(false);
+    };
+
+    // --- Inquiry Logic ---
+    const [searchQuery, setSearchQuery] = useState("");
+    const [searchResult, setSearchResult] = useState<any>(null);
+    const [searchLoading, setSearchLoading] = useState(false);
+
+    const handleSearch = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSearchLoading(true);
+        setSearchResult(null);
+        try {
+            // Search by Request ID first
+            let q = query(collection(db, "security_requests"), where("requestId", "==", searchQuery.trim()));
+            let snap = await getDocs(q);
+
+            // If not found, try National ID
+            if (snap.empty) {
+                q = query(collection(db, "security_requests"), where("natId", "==", searchQuery.trim()));
+                snap = await getDocs(q);
+            }
+
+            if (!snap.empty) {
+                // Get the most recent request if multiple match national ID
+                const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                // Sort by createdAt desc if needed, but for now just take first or let user be specific
+                setSearchResult(docs[0]);
+            } else {
+                alert("No request found with this ID / لم يتم العثور على طلب بهذا الرقم");
+            }
+        } catch (err) {
+            console.error("Search Error", err);
+            alert("Error searching / حدث خطأ في البحث");
+        }
+        setSearchLoading(false);
     };
 
     return (
@@ -142,104 +182,163 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
                 </div>
 
                 {/* Scrollable Form Content */}
-                <div className="flex-1 overflow-y-auto p-8 relative">
+                <div className="flex-1 overflow-y-auto p-8 relative font-['Tajawal']">
 
-                    <form onSubmit={handleSubmit} className="space-y-8">
+                    {type === 'inquiry' ? (
+                        // --- NEW MINIMALIST INQUIRY UI ---
+                        <div className="flex flex-col items-center justify-center min-h-[400px] w-full max-w-2xl mx-auto space-y-8">
+                            {!searchResult ? (
+                                <>
+                                    <div className="text-center space-y-2">
+                                        <span className="text-4xl">🔍</span>
+                                        <h3 className="text-xl font-black text-zinc-800">Track Your Request / تتبع حالة الطلب</h3>
+                                        <p className="text-zinc-500 text-sm">Enter your Request ID (MS-XXXX) or National ID</p>
+                                    </div>
+                                    <form onSubmit={handleSearch} className="w-full flex gap-4">
+                                        <input
+                                            type="text"
+                                            placeholder="MS-1001 or ID Number..."
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="flex-1 p-4 rounded-xl border border-zinc-200 bg-white shadow-inner font-bold text-center text-lg focus:border-[#C4B687] outline-none transition-all uppercase placeholder:normal-case"
+                                        />
+                                        <button type="submit" disabled={searchLoading} className="px-8 py-4 bg-[#C4B687] text-white rounded-xl font-black shadow-lg hover:bg-[#b3a575] transition-all">
+                                            {searchLoading ? "..." : "Check"}
+                                        </button>
+                                    </form>
+                                </>
+                            ) : (
+                                // --- STATUS RESULT CARD ---
+                                <div className={`w-full p-8 rounded-[2rem] border-2 flex flex-col items-center text-center shadow-xl animate-in fade-in zoom-in-95
+                                    ${searchResult.status === 'approved' ? 'bg-emerald-50 border-emerald-500/30' :
+                                        searchResult.status === 'rejected' ? 'bg-red-50 border-red-500/30' :
+                                            'bg-yellow-50 border-yellow-500/30'}
+                                `}>
+                                    <div className={`w-20 h-20 rounded-full flex items-center justify-center text-3xl mb-4 shadow-md
+                                        ${searchResult.status === 'approved' ? 'bg-emerald-100 text-emerald-600' :
+                                            searchResult.status === 'rejected' ? 'bg-red-100 text-red-600' :
+                                                'bg-yellow-100 text-yellow-600'}
+                                    `}>
+                                        {searchResult.status === 'approved' ? '✅' : searchResult.status === 'rejected' ? '❌' : '⏳'}
+                                    </div>
 
-                        {/* Request Type */}
-                        <div className="grid grid-cols-4 gap-4 bg-zinc-50 p-4 rounded-xl border border-zinc-200">
-                            {['new', 'renew', 'lost', 'damaged'].map(rt => (
-                                <label key={rt} className={`flex flex-col items-center justify-center p-3 rounded-lg border-2 cursor-pointer transition-all ${formData.requestType === rt ? 'border-[#C4B687] bg-[#C4B687]/10' : 'border-transparent hover:bg-zinc-100'}`}>
-                                    <input type="radio" name="reqType" value={rt} checked={formData.requestType === rt} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, requestType: e.target.value })} className="hidden" />
-                                    <span className="text-sm font-bold uppercase">{rt}</span>
-                                    <span className="text-xs font-serif opacity-70">
-                                        {rt === 'new' ? 'جديد' : rt === 'renew' ? 'تجديد' : rt === 'lost' ? 'بدل فاقد' : 'بدل تالف'}
-                                    </span>
-                                </label>
-                            ))}
+                                    <h2 className="text-2xl font-black text-zinc-800 mb-1">
+                                        {searchResult.status === 'approved' ? 'Congratulations! Request Approved' :
+                                            searchResult.status === 'rejected' ? 'Request Returned / الطلب مرفوض' :
+                                                'Under Processing / قيد المراجعة'}
+                                    </h2>
+                                    <p className="text-zinc-500 font-bold mb-6 text-sm">Request ID: {searchResult.requestId}</p>
+
+                                    {searchResult.status === 'rejected' && (
+                                        <div className="w-full bg-white/50 p-6 rounded-xl border border-red-200 mb-6">
+                                            <p className="text-xs font-black text-red-500 uppercase mb-2">REJECTION REASON / سبب الرفض</p>
+                                            <p className="text-red-700 font-bold">{searchResult.rejectionReason || "No specific reason provided. Please contact processing center."}</p>
+                                        </div>
+                                    )}
+
+                                    <button onClick={() => setSearchResult(null)} className="text-zinc-400 text-xs font-bold hover:text-zinc-600 underline">Check Another Request</button>
+                                </div>
+                            )}
                         </div>
+                    ) : (
+                        // --- STANDARD FORM ---
+                        <form onSubmit={handleSubmit} className="space-y-8">
 
-                        {/* Personal Information Section */}
-                        <SectionTitle title="Personal Information / البيانات الشخصية" />
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            <Input label="Full Name (English) / الاسم بالإنجليزية" value={formData.fullNameEn} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, fullNameEn: e.target.value })} required />
-                            <Input label="Full Name (Arabic) / الاسم بالعربية" value={formData.fullNameAr} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, fullNameAr: e.target.value })} dir="rtl" required />
-                            <Input label="ID Number / رقم الهوية/الإقامة" value={formData.natId} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, natId: e.target.value })} required />
-
-                            <Input label="Employee ID / الرقم الوظيفي" value={formData.empId} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, empId: e.target.value })} required />
-                            <Input label="Job Title / المسمى الوظيفي" value={formData.title} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, title: e.target.value })} required />
-                            <Input label="Grade / الدرجة" value={formData.grade} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, grade: e.target.value })} />
-
-                            <Input label="Nationality / الجنسية" value={formData.nationality} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, nationality: e.target.value })} required />
-                            <Input label="Date of Birth / تاريخ الميلاد" type="date" value={formData.dob} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, dob: e.target.value })} required />
-                            <Input label="Place of Birth / مكان الميلاد" value={formData.placeOfBirth} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, placeOfBirth: e.target.value })} required />
-
-                            <Input label="Mobile No / رقم الجوال" value={formData.mobile} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, mobile: e.target.value })} required />
-                            <Input label="Blood Group / فصيلة الدم" value={formData.bloodGroup} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, bloodGroup: e.target.value })} required />
-
-                            {/* Affiliation Dropdown */}
-                            <div className="flex flex-col gap-1">
-                                <label className="text-xs font-black text-zinc-500 uppercase">Department / الإدارة</label>
-                                <select
-                                    className="p-3 border rounded-xl bg-white font-bold text-sm outline-none focus:border-[#C4B687]"
-                                    value={type.includes('contractor') ? formData.companyName : formData.dept}
-                                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => type.includes('contractor') ? setFormData({ ...formData, companyName: e.target.value }) : setFormData({ ...formData, dept: e.target.value })}
-                                >
-                                    <option value="">-- Select / اختر --</option>
-                                    {type.includes('contractor')
-                                        ? companies.map(c => <option key={c.id} value={c.name}>{c.name}</option>)
-                                        : departments.map(d => <option key={d.id} value={d.name}>{d.name}</option>)
-                                    }
-                                </select>
+                            {/* Request Type */}
+                            <div className="grid grid-cols-4 gap-4 bg-zinc-50 p-4 rounded-xl border border-zinc-200">
+                                {['new', 'renew', 'lost', 'damaged'].map(rt => (
+                                    <label key={rt} className={`flex flex-col items-center justify-center p-3 rounded-lg border-2 cursor-pointer transition-all ${formData.requestType === rt ? 'border-[#C4B687] bg-[#C4B687]/10' : 'border-transparent hover:bg-zinc-100'}`}>
+                                        <input type="radio" name="reqType" value={rt} checked={formData.requestType === rt} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, requestType: e.target.value })} className="hidden" />
+                                        <span className="text-sm font-bold uppercase">{rt}</span>
+                                        <span className="text-xs font-serif opacity-70">
+                                            {rt === 'new' ? 'جديد' : rt === 'renew' ? 'تجديد' : rt === 'lost' ? 'بدل فاقد' : 'بدل تالف'}
+                                        </span>
+                                    </label>
+                                ))}
                             </div>
-                        </div>
 
-                        {/* Vehicle Section (Conditional) */}
-                        {(type.includes('vehicle')) && (
-                            <>
-                                <SectionTitle title="Vehicle & License Data / بيانات المركبة والرخصة" />
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                    <Input label="License Type / نوع الرخصة" value={formData.licenseType} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, licenseType: e.target.value })} />
-                                    <Input label="License No / رقم الرخصة" value={formData.licenseNo} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, licenseNo: e.target.value })} />
-                                    <Input label="Expiry Date / تاريخ الانتهاء" type="date" value={formData.licenseExpiry} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, licenseExpiry: e.target.value })} />
-                                    <div className="hidden lg:block"></div> {/* Spacer */}
+                            {/* Personal Information Section */}
+                            <SectionTitle title="Personal Information / البيانات الشخصية" />
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                <Input label="Full Name (English) / الاسم بالإنجليزية" value={formData.fullNameEn} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, fullNameEn: e.target.value })} required />
+                                <Input label="Full Name (Arabic) / الاسم بالعربية" value={formData.fullNameAr} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, fullNameAr: e.target.value })} dir="rtl" required />
+                                <Input label="ID Number / رقم الهوية/الإقامة" value={formData.natId} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, natId: e.target.value })} required />
 
-                                    <Input label="Plate No / رقم اللوحة" value={formData.plateNo} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, plateNo: e.target.value })} />
-                                    <Input label="Model / الموديل" value={formData.vehicleModel} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, vehicleModel: e.target.value })} />
-                                    <Input label="Color / اللون" value={formData.vehicleColor} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, vehicleColor: e.target.value })} />
-                                    <Input label="Type / النوع" value={formData.vehicleType} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, vehicleType: e.target.value })} />
+                                <Input label="Employee ID / الرقم الوظيفي" value={formData.empId} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, empId: e.target.value })} required />
+                                <Input label="Job Title / المسمى الوظيفي" value={formData.title} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, title: e.target.value })} required />
+                                <Input label="Grade / الدرجة" value={formData.grade} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, grade: e.target.value })} />
+
+                                <Input label="Nationality / الجنسية" value={formData.nationality} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, nationality: e.target.value })} required />
+                                <Input label="Date of Birth / تاريخ الميلاد" type="date" value={formData.dob} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, dob: e.target.value })} required />
+                                <Input label="Place of Birth / مكان الميلاد" value={formData.placeOfBirth} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, placeOfBirth: e.target.value })} required />
+
+                                <Input label="Mobile No / رقم الجوال" value={formData.mobile} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, mobile: e.target.value })} required />
+                                <Input label="Blood Group / فصيلة الدم" value={formData.bloodGroup} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, bloodGroup: e.target.value })} required />
+
+                                {/* Affiliation Dropdown */}
+                                <div className="flex flex-col gap-1">
+                                    <label className="text-xs font-black text-zinc-500 uppercase">Department / الإدارة</label>
+                                    <select
+                                        className="p-3 border rounded-xl bg-white font-bold text-sm outline-none focus:border-[#C4B687]"
+                                        value={type.includes('contractor') ? formData.companyName : formData.dept}
+                                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => type.includes('contractor') ? setFormData({ ...formData, companyName: e.target.value }) : setFormData({ ...formData, dept: e.target.value })}
+                                    >
+                                        <option value="">-- Select / اختر --</option>
+                                        {type.includes('contractor')
+                                            ? companies.map(c => <option key={c.id} value={c.name}>{c.name}</option>)
+                                            : departments.map(d => <option key={d.id} value={d.name}>{d.name}</option>)
+                                        }
+                                    </select>
                                 </div>
-                            </>
-                        )}
+                            </div>
 
-                        {/* Attachments Section */}
-                        <SectionTitle title="Required Attachments / المرفقات المطلوبة" />
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                            {config.requiredFiles.map(fileKey => (
-                                <div key={fileKey} className="border-2 border-dashed border-zinc-300 rounded-xl p-4 flex flex-col items-center justify-center hover:bg-zinc-50 transition-colors">
-                                    <span className="text-2xl mb-2">📂</span>
-                                    <span className="text-[10px] font-bold uppercase text-zinc-600 mb-2">{fileKey.replace(/([A-Z])/g, ' $1')}</span>
-                                    <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => handleFileChange(fileKey, e)} className="text-[10px] w-full file:mr-2 file:py-1 file:px-2 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#C4B687]/10 file:text-[#C4B687] hover:file:bg-[#C4B687]/20" />
-                                </div>
-                            ))}
-                        </div>
+                            {/* Vehicle Section (Conditional) */}
+                            {(type.includes('vehicle')) && (
+                                <>
+                                    <SectionTitle title="Vehicle & License Data / بيانات المركبة والرخصة" />
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                        <Input label="License Type / نوع الرخصة" value={formData.licenseType} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, licenseType: e.target.value })} />
+                                        <Input label="License No / رقم الرخصة" value={formData.licenseNo} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, licenseNo: e.target.value })} />
+                                        <Input label="Expiry Date / تاريخ الانتهاء" type="date" value={formData.licenseExpiry} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, licenseExpiry: e.target.value })} />
+                                        <div className="hidden lg:block"></div> {/* Spacer */}
 
-                        {/* Penalties Notice */}
-                        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg">
-                            <h4 className="text-red-700 font-bold text-sm mb-1">LEGAL NOTICE / تنويه قانوني</h4>
-                            <p className="text-red-600 text-xs font-medium whitespace-pre-line leading-relaxed">
-                                {config.penalties}
-                            </p>
-                        </div>
+                                        <Input label="Plate No / رقم اللوحة" value={formData.plateNo} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, plateNo: e.target.value })} />
+                                        <Input label="Model / الموديل" value={formData.vehicleModel} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, vehicleModel: e.target.value })} />
+                                        <Input label="Color / اللون" value={formData.vehicleColor} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, vehicleColor: e.target.value })} />
+                                        <Input label="Type / النوع" value={formData.vehicleType} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, vehicleType: e.target.value })} />
+                                    </div>
+                                </>
+                            )}
 
-                        {/* Actions */}
-                        <div className="flex justify-end gap-4 border-t pt-6 bg-white sticky bottom-0 z-20">
-                            <button type="button" onClick={onClose} className="px-6 py-3 font-bold text-zinc-500 hover:text-zinc-800 transition-colors">Cancel / إلغاء</button>
-                            <button type="submit" disabled={loading} className="px-8 py-3 bg-[#C4B687] text-white font-black text-sm uppercase tracking-wider rounded shadow-lg hover:shadow-xl hover:bg-[#b3a575] transition-all disabled:opacity-50">
-                                {loading ? "Processing..." : "Submit Request / إرسال الطلب"}
-                            </button>
-                        </div>
-                    </form>
+                            {/* Attachments Section */}
+                            <SectionTitle title="Required Attachments / المرفقات المطلوبة" />
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                {config.requiredFiles.map(fileKey => (
+                                    <div key={fileKey} className="border-2 border-dashed border-zinc-300 rounded-xl p-4 flex flex-col items-center justify-center hover:bg-zinc-50 transition-colors">
+                                        <span className="text-2xl mb-2">📂</span>
+                                        <span className="text-[10px] font-bold uppercase text-zinc-600 mb-2">{fileKey.replace(/([A-Z])/g, ' $1')}</span>
+                                        <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => handleFileChange(fileKey, e)} className="text-[10px] w-full file:mr-2 file:py-1 file:px-2 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#C4B687]/10 file:text-[#C4B687] hover:file:bg-[#C4B687]/20" />
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Penalties Notice */}
+                            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg">
+                                <h4 className="text-red-700 font-bold text-sm mb-1">LEGAL NOTICE / تنويه قانوني</h4>
+                                <p className="text-red-600 text-xs font-medium whitespace-pre-line leading-relaxed">
+                                    {config.penalties}
+                                </p>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex justify-end gap-4 border-t pt-6 bg-white sticky bottom-0 z-20">
+                                <button type="button" onClick={onClose} className="px-6 py-3 font-bold text-zinc-500 hover:text-zinc-800 transition-colors">Cancel / إلغاء</button>
+                                <button type="submit" disabled={loading} className="px-8 py-3 bg-[#C4B687] text-white font-black text-sm uppercase tracking-wider rounded shadow-lg hover:shadow-xl hover:bg-[#b3a575] transition-all disabled:opacity-50">
+                                    {loading ? "Processing..." : "Submit Request / إرسال الطلب"}
+                                </button>
+                            </div>
+                        </form>
+                    )}
 
                 </div>
 
@@ -260,7 +359,7 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
 
                     <div className="text-center mb-8">
                         <h2 className="text-3xl font-black uppercase underline decoration-[#C4B687] underline-offset-8 mb-2">{config.title}</h2>
-                        <p className="text-sm font-bold text-zinc-400">Reference: {new Date().getTime().toString().slice(-8)}</p>
+                        <p className="text-sm font-bold text-zinc-400">Reference: {formData.generatedId || "PENDING"}</p>
                     </div>
 
                     <table className="w-full border-collapse border border-zinc-300 text-sm mb-8">
