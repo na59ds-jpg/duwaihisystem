@@ -295,32 +295,48 @@ export function Login() {
       )}
 
       {(view === 'admin' || view === 'gate') && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-md p-4 animate-in fade-in zoom-in-95">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[10px] p-4 animate-in fade-in zoom-in-95 font-['Tajawal']">
           <div className="relative w-full max-w-md">
-            <button onClick={() => setView('main')} className="absolute -top-12 right-0 text-gray-500 hover:text-red-500 text-xl font-bold">✕ Close</button>
-            <div className={`p-10 rounded-[2.5rem] border border-[var(--royal-gold)] shadow-2xl bg-white relative overflow-hidden`}>
-              <div className="absolute top-0 left-0 w-full h-2 bg-[var(--royal-gold)]"></div>
+            <button onClick={() => setView('main')} className="absolute -top-12 right-0 text-zinc-400 hover:text-red-500 text-3xl font-black transition-colors">&times;</button>
+            <div className={`p-10 rounded-[2.5rem] border border-[var(--royal-gold)]/30 shadow-[0_20px_60px_rgba(0,0,0,0.1)] bg-white/40 backdrop-blur-md relative overflow-hidden glass-card`}>
+              {/* Decorative Header Bar */}
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-[var(--royal-gold)] to-[#A3966D] shadow-[0_0_15px_rgba(196,182,135,0.6)]"></div>
 
-              <h3 className="text-2xl font-black text-center text-[var(--text-main)] mb-8">
-                {view === 'admin' ? (isRTL ? "دخول مركز الإدارة" : "Command Center Login") : (isRTL ? "دخول البوابة الأمنية" : "Security Gate Login")}
+              <h3 className="text-2xl font-black text-center text-[var(--text-main)] mb-2 uppercase tracking-tight flex flex-col items-center gap-2">
+                <span className="text-4xl">{view === 'admin' ? "👑" : "🛡️"}</span>
+                {view === 'admin' ? (isRTL ? "مركز الإدارة" : "Command Center") : (isRTL ? "البوابة الأمنية" : "Security Gate")}
               </h3>
+              <p className="text-center text-[10px] font-bold text-zinc-500/80 mb-8 uppercase tracking-[0.2em]">Authorized Access Only</p>
 
-              <form onSubmit={view === 'admin' ? handleLogin : handleEmployeeLogin} className="space-y-4">
-                <InputBox
-                  placeholder={view === 'admin' ? (isRTL ? "اسم المستخدم" : "Username") : (isRTL ? "الرقم الوظيفي" : "Emp ID")}
-                  value={view === 'admin' ? username : empIdLogin}
-                  onChange={e => view === 'admin' ? setUsername(e.target.value) : setEmpIdLogin(e.target.value)}
-                />
-                <InputBox
-                  type="password"
-                  placeholder={isRTL ? "كلمة المرور" : "Password"}
-                  value={view === 'admin' ? password : empPassword}
-                  onChange={e => view === 'admin' ? setPassword(e.target.value) : setEmpPassword(e.target.value)}
-                />
-                {error && <p className="text-red-500 text-center text-xs font-bold">{error}</p>}
+              <form onSubmit={view === 'admin' ? handleLogin : handleEmployeeLogin} className="space-y-5">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase ml-2">{view === 'admin' ? (isRTL ? "اسم المستخدم" : "Username") : (isRTL ? "الرقم الوظيفي" : "Emp ID")}</label>
+                  <InputBox
+                    placeholder=""
+                    value={view === 'admin' ? username : empIdLogin}
+                    onChange={e => view === 'admin' ? setUsername(e.target.value) : setEmpIdLogin(e.target.value)}
+                  />
+                </div>
 
-                <button type="submit" className="w-full py-4 bg-[var(--royal-gold)] text-white rounded-xl font-bold text-lg hover:brightness-90 mt-4 transition-all shadow-lg">
-                  {isRTL ? "دخول النظام" : "Login System"}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase ml-2">{isRTL ? "كلمة المرور" : "Password"}</label>
+                  <InputBox
+                    type="password"
+                    placeholder=""
+                    value={view === 'admin' ? password : empPassword}
+                    onChange={e => view === 'admin' ? setPassword(e.target.value) : setEmpPassword(e.target.value)}
+                  />
+                </div>
+
+                {error && (
+                  <div className="bg-red-50/50 border border-red-200/50 p-3 rounded-xl flex items-center gap-3 animate-in slide-in-from-top-2">
+                    <span className="text-red-500 text-lg">⚠️</span>
+                    <p className="text-red-700 text-[10px] font-black uppercase tracking-wide">{error}</p>
+                  </div>
+                )}
+
+                <button type="submit" className="w-full py-4 bg-gradient-to-r from-[var(--royal-gold)] to-[#A3966D] text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:scale-[1.02] mt-6 transition-all shadow-[0_10px_20px_rgba(196,182,135,0.3)] hover:shadow-[0_15px_30px_rgba(196,182,135,0.5)]">
+                  {isRTL ? "تسجيل الدخول" : "Login System"}
                 </button>
               </form>
             </div>
