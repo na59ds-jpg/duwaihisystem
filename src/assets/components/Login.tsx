@@ -1,18 +1,16 @@
 import { useState, useEffect } from "react";
 import { useApp } from "../../App";
 import { db } from "../../firebase";
-import { collection, addDoc, getDocs, getDoc, query, where, serverTimestamp, doc, updateDoc, onSnapshot } from "firebase/firestore";
-import { AnnouncementsBoard } from "./AnnouncementsBoard";
+import { collection, addDoc, getDocs, getDoc, query, where, serverTimestamp, doc, onSnapshot } from "firebase/firestore";
 
 /**
  * MASAR PLATFORM - Al Duwaihi Gold Mine
- * FEATURE: Dynamic Affiliation (Dept/Company) during Registration.
- * FEATURE: Strict Account Separation (Portal Users vs. Staff).
- * FEATURE: Professional Quick Access PIN (Master Login).
- * FEATURE: Integrated Announcements Board (Security Bulletin).
+ * FEATURE: Security Services Center (Refactored)
  */
 
-import type { StructureItem, TicketData, RecoveryData, RegData, User } from "../../types";
+import type { StructureItem, TicketData, User } from "../../types";
+
+import { ServiceRequestModal } from "./ServiceRequestModal";
 
 export function Login() {
   const { setUser, language, setLanguage, theme } = useApp();
@@ -24,45 +22,36 @@ export function Login() {
   const [loading, setLoading] = useState(false);
   const [view, setView] = useState<'main' | 'employee' | 'gate' | 'admin'>('main');
 
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [isRecovering, setIsRecovering] = useState(false);
-  const [recoveryStep, setRecoveryStep] = useState<1 | 2>(1);
-  const [targetAccount, setTargetAccount] = useState<any>(null); // Keep any for now or strictly type if possible
+  // New State for Service Modal
+  const [showServiceModal, setShowServiceModal] = useState(false);
+  const [serviceType, setServiceType] = useState<any>('employee_card');
 
   const [empIdLogin, setEmpIdLogin] = useState("");
   const [empPassword, setEmpPassword] = useState("");
 
-  // قوائم الهيكلية المسترجعة من النظام
+  // Structure Lists
   const [departments, setDepartments] = useState<StructureItem[]>([]);
   const [companies, setCompanies] = useState<StructureItem[]>([]);
-
-  // بيانات التسجيل المحدثة لتشمل نوع المستخدم والتبعية
-  const [regData, setRegData] = useState<RegData>({
-    name: "",
-    empId: "",
-    nationalId: "",
-    pass: "",
-    userType: "موظف", // موظف أو مقاول
-    affiliation: ""   // القسم أو الشركة
-  });
-
-  const [recoveryData, setRecoveryData] = useState<RecoveryData>({ empId: "", nationalId: "", newPass: "" });
 
   const [showSupport, setShowSupport] = useState(false);
   const [supportType, setSupportType] = useState<"tech" | "security">("tech");
   const [ticket, setTicket] = useState<TicketData>({ name: "", empId: "", nationalId: "", message: "", issueType: "" });
 
-  // جلب الأقسام والشركات ديناميكياً عند فتح شاشة التسجيل
+  // جلب الأقسام والشركات ديناميكياً دائماً (Dropdowns for Services)
   useEffect(() => {
-    if (isRegistering) {
-      const unsub = onSnapshot(collection(db, "structure"), (snap) => {
-        const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as StructureItem));
-        setDepartments(data.filter((i) => i.type === "dept"));
-        setCompanies(data.filter((i) => i.type === "comp"));
-      });
-      return () => unsub();
-    }
-  }, [isRegistering]);
+    // We always need this now for the Service Requests
+    const unsub = onSnapshot(collection(db, "structure"), (snap) => {
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as StructureItem));
+      setDepartments(data.filter((i) => i.type === "dept"));
+      setCompanies(data.filter((i) => i.type === "comp"));
+    });
+    return () => unsub();
+  }, []);
+
+  const handleOpenService = (type: string) => {
+    setServiceType(type);
+    setShowServiceModal(true);
+  };
 
   // 1. دخول الإدارة (Admin Login) مع الرمز السريع الاحترافي
   const handleLogin = async (e: React.FormEvent) => {
@@ -155,49 +144,7 @@ export function Login() {
     setLoading(false);
   };
 
-  const handleVerifyRecovery = async (e: React.FormEvent) => {
-    e.preventDefault(); setLoading(true); setError("");
-    try {
-      const q = query(collection(db, "portal_users"), where("empId", "==", recoveryData.empId.trim()));
-      const snap = await getDocs(q);
-      if (!snap.empty) {
-        const acc = { id: snap.docs[0].id, ...snap.docs[0].data() } as any;
-        if (acc.nationalId === recoveryData.nationalId.trim()) {
-          setTargetAccount(acc);
-          setRecoveryStep(2);
-        } else { setError(isRTL ? "رقم الهوية لا يطابق المسجل لدينا" : "National ID Mismatch"); }
-      } else { setError(isRTL ? "الرقم الوظيفي غير موجود" : "Employee ID not found"); }
-    } catch { setError("Error"); }
-    setLoading(false);
-  };
 
-  const handleFinalReset = async (e: React.FormEvent) => {
-    e.preventDefault(); setLoading(true);
-    try {
-      await updateDoc(doc(db, "portal_users", targetAccount.id), { pass: recoveryData.newPass });
-      alert(isRTL ? "تم تحديث كلمة المرور بنجاح ✅" : "Password Updated ✅");
-      setIsRecovering(false); setRecoveryStep(1); setRecoveryData({ empId: "", nationalId: "", newPass: "" });
-    } catch { alert("Error"); }
-    setLoading(false);
-  };
-
-  const handleRegisterEmployee = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!regData.affiliation) return alert(isRTL ? "يرجى اختيار القسم أو الشركة" : "Select affiliation");
-
-    setLoading(true);
-    try {
-      await addDoc(collection(db, "portal_users"), {
-        ...regData,
-        role: "Employee",
-        status: "active",
-        createdAt: serverTimestamp()
-      });
-      alert(isRTL ? "تم إنشاء حسابك بنجاح ✅ يمكنك الدخول الآن" : "Account Created Successfully ✅");
-      setIsRegistering(false);
-    } catch { setError("Error"); }
-    setLoading(false);
-  };
 
   const handleSendSupport = async () => {
     const isTech = supportType === "tech";
@@ -269,126 +216,148 @@ export function Login() {
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col items-center justify-center z-10 p-6 w-full max-w-[1600px] mx-auto">
-        {view === 'main' ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 w-full items-center">
+      <main className="flex-1 flex flex-col items-center justify-center z-10 p-6 w-full max-w-[1600px] mx-auto py-20">
 
-            {/* Left Column: Announcements (Visible on Desktop) */}
-            <div className="hidden lg:block">
-              <AnnouncementsBoard />
-            </div>
+        {/* TOP SECTION: Command & Control Only */}
+        <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-8 mb-16 animate-in slide-in-from-top-10 duration-700">
+          <MenuCard
+            icon="👑"
+            title={isRTL ? "مركز الإدارة" : "Command Center"}
+            desc="Admin System Access"
+            onClick={() => setView('admin')}
+            featured
+            theme={theme}
+          />
+          <MenuCard
+            icon="🛡️"
+            title={isRTL ? "بوابة الأمن" : "Security Gate"}
+            desc="Field Control Access"
+            onClick={() => setView('gate')}
+            theme={theme}
+          />
+        </div>
 
-            {/* Right Column: Menu Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full animate-in fade-in zoom-in duration-700">
-              <div className="md:col-span-2">
-                <MenuCard icon="👑" title={isRTL ? "مركز الإدارة" : "Command Center"} desc="System Admin" onClick={() => setView('admin')} featured theme="dark" />
-              </div>
-              <MenuCard icon="📱" title={isRTL ? "بوابة الموظف" : "Employee Portal"} desc="Portal & Services" onClick={() => setView('employee')} theme="dark" />
-              <MenuCard icon="🛡️" title={isRTL ? "بوابة الأمن" : "Security Gate"} desc="Field Control" onClick={() => setView('gate')} theme="dark" />
-            </div>
-
+        {/* BOTTOM SECTION: Security Services Grid (6 Cards) */}
+        <div className="w-full text-center">
+          <div className="flex items-center justify-center gap-4 mb-10 opacity-70">
+            <div className="h-[1px] w-20 bg-[#C4B687]"></div>
+            <h3 className="text-[#C4B687] text-xs font-black uppercase tracking-[0.3em]">
+              {isRTL ? "الخدمات الإلكترونية والأمنية" : "Security Electronic Services"}
+            </h3>
+            <div className="h-[1px] w-20 bg-[#C4B687]"></div>
           </div>
-        ) : (
-          <div className="flex w-full gap-8 justify-center items-start">
 
-            {/* Side Panel for Announcements (Optional based on space) */}
-            <div className="hidden xl:block w-96 pt-10">
-              <AnnouncementsBoard />
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-6xl mx-auto">
+            {/* Employee Card - White/Gold */}
+            <ServiceCard
+              title="Employee Card"
+              titleAr="إصدار بطاقة موظف"
+              color="bg-white border-[#C4B687]"
+              textColor="text-zinc-900"
+              icon="🆔"
+              onClick={() => handleOpenService('employee_card')}
+            />
 
-            {/* Login Form Container */}
-            <div className={`w-full max-w-md backdrop-blur-2xl rounded-[3rem] shadow-2xl border relative overflow-hidden flex flex-col animate-in slide-in-from-bottom-8 bg-black/80 border-[#C4B687]/20`}>
+            {/* Contractor Card - White/Orange */}
+            <ServiceCard
+              title="Contractor Card"
+              titleAr="إصدار بطاقة مقاول"
+              color="bg-white border-orange-500"
+              textColor="text-zinc-900"
+              icon="👷"
+              onClick={() => handleOpenService('contractor_card')}
+            />
 
-              <div className={`flex-1 p-12 lg:p-16 flex flex-col justify-center relative`}>
-                <button onClick={() => { setIsRegistering(false); setIsRecovering(false); setView('main'); setError(""); }} className={`absolute top-8 ${isRTL ? 'left-8' : 'right-8'} group flex items-center gap-2 text-[#C4B687] hover:scale-105 transition-all z-50`}>
-                  <div className="w-10 h-10 rounded-full border border-[#C4B687]/40 flex items-center justify-center bg-[#C4B687]/5 hover:bg-[#C4B687]/20 transition-all shadow-lg">
-                    <svg className={`w-5 h-5 ${isRTL ? 'rotate-0' : 'rotate-180'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-                  </div>
-                </button>
+            {/* Private Vehicle - White */}
+            <ServiceCard
+              title="Private Vehicle"
+              titleAr="تصريح مركبة خاصة"
+              color="bg-white border-zinc-200"
+              textColor="text-zinc-900"
+              icon="🚗"
+              onClick={() => handleOpenService('private_vehicle')}
+            />
 
-                <div className="max-w-sm mx-auto w-full">
-                  <h3 className={`text-2xl font-bold text-center mb-10 tracking-tight uppercase ${theme === 'dark' ? 'text-white' : 'text-zinc-900'}`}>
-                    <span className="border-b-4 border-[#C4B687] pb-1 px-2">
-                      {isRecovering ? (isRTL ? "استعادة" : "Recover") : (isRegistering ? (isRTL ? "حساب جديد" : "New Account") : (isRTL ? "دخول النظام" : "System Login"))}
-                    </span>
-                  </h3>
+            {/* Company Vehicle - Green */}
+            <ServiceCard
+              title="Company Vehicle"
+              titleAr="تصريح مركبة شركة"
+              color="bg-emerald-700 border-emerald-500"
+              textColor="text-white"
+              icon="🚙"
+              onClick={() => handleOpenService('company_vehicle')}
+            />
 
-                  <form onSubmit={
-                    isRecovering ? (recoveryStep === 1 ? handleVerifyRecovery : handleFinalReset) :
-                      (view === 'admin' ? handleLogin : (isRegistering ? handleRegisterEmployee : handleEmployeeLogin))
-                  } className="space-y-5">
-                    {isRecovering ? (
-                      <>
-                        {recoveryStep === 1 ? (
-                          <>
-                            <InputBox placeholder={isRTL ? "الرقم الوظيفي" : "Emp ID"} value={recoveryData.empId} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRecoveryData({ ...recoveryData, empId: e.target.value })} theme={theme} />
-                            <InputBox placeholder={isRTL ? "رقم الهوية" : "National ID"} value={recoveryData.nationalId} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRecoveryData({ ...recoveryData, nationalId: e.target.value })} theme={theme} />
-                          </>
-                        ) : (
-                          <InputBox type="password" placeholder={isRTL ? "كلمة المرور الجديدة" : "New Password"} value={recoveryData.newPass} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRecoveryData({ ...recoveryData, newPass: e.target.value })} theme={theme} />
-                        )}
-                      </>
-                    ) : isRegistering ? (
-                      <>
-                        <div className="flex gap-2 mb-4 bg-black/20 p-1.5 rounded-2xl">
-                          <button type="button" onClick={() => setRegData({ ...regData, userType: "موظف", affiliation: "" })} className={`flex-1 py-2 rounded-xl text-[10px] font-black transition-all ${regData.userType === 'موظف' ? 'bg-[#C4B687] text-black' : 'text-zinc-500'}`}>{isRTL ? "موظف معادن" : "Maaden Staff"}</button>
-                          <button type="button" onClick={() => setRegData({ ...regData, userType: "مقاول", affiliation: "" })} className={`flex-1 py-2 rounded-xl text-[10px] font-black transition-all ${regData.userType === 'مقاول' ? 'bg-amber-600 text-white' : 'text-zinc-500'}`}>{isRTL ? "موظف مقاول" : "Contractor"}</button>
-                        </div>
+            {/* Contractor Vehicle - Yellow */}
+            <ServiceCard
+              title="Contractor Vehicle"
+              titleAr="تصريح مركبة مقاول"
+              color="bg-yellow-400 border-yellow-300"
+              textColor="text-black"
+              icon="🚜"
+              onClick={() => handleOpenService('contractor_vehicle')}
+            />
 
-                        <select
-                          required
-                          value={regData.affiliation}
-                          onChange={(e) => setRegData({ ...regData, affiliation: e.target.value })}
-                          className={`w-full p-4 rounded-xl font-black text-xs border outline-none transition-all mb-2 ${theme === 'dark' ? 'bg-white/5 border-white/10 text-white' : 'bg-black/5 border-zinc-200 text-zinc-900'}`}
-                        >
-                          <option value="">-- {regData.userType === 'موظف' ? (isRTL ? "حدد القسم التابع له" : "Select Dept") : (isRTL ? "حدد شركة المقاولات" : "Select Company")} --</option>
-                          {regData.userType === 'موظف'
-                            ? departments.map(d => <option key={d.id} value={d.name}>{d.name}</option>)
-                            : companies.map(c => <option key={c.id} value={c.name}>{c.name}</option>)
-                          }
-                        </select>
+            {/* Inquiry - Dark */}
+            <ServiceCard
+              title="Request Inquiry"
+              titleAr="استعلام عن طلب"
+              color="bg-zinc-800 border-zinc-600"
+              textColor="text-white"
+              icon="🔍"
+              onClick={() => handleOpenService('inquiry')}
+            />
+          </div>
+        </div>
 
-                        <InputBox placeholder={isRTL ? "الاسم الكامل (كما في الهوية)" : "Full Name"} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRegData({ ...regData, name: e.target.value })} theme={theme} />
-                        <InputBox placeholder={isRTL ? "الرقم الوظيفي" : "Employee ID"} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRegData({ ...regData, empId: e.target.value })} theme={theme} />
-                        <InputBox placeholder={isRTL ? "رقم الهوية / الإقامة" : "National ID"} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRegData({ ...regData, nationalId: e.target.value })} theme={theme} />
-                        <InputBox type="password" placeholder={isRTL ? "إنشاء كلمة المرور" : "Create Password"} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRegData({ ...regData, pass: e.target.value })} theme={theme} />
-                      </>
-                    ) : (
-                      <>
-                        <InputBox
-                          placeholder={view === 'admin' ? (isRTL ? "اسم المستخدم أو الرمز السريع" : "Username or Quick PIN") : (isRTL ? "الرقم الوظيفي" : "Emp ID")}
-                          value={view === 'admin' ? username : empIdLogin}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => view === 'admin' ? setUsername(e.target.value) : setEmpIdLogin(e.target.value)}
-                          theme={theme}
-                        />
-                        {/* عرض كلمة المرور فقط إذا لم يكن المستخدم يكتب الرمز السريع نواف */}
-                        {!(view === 'admin' && (username === "080012" || username === localStorage.getItem("vip_pin"))) && (
-                          <InputBox
-                            type="password"
-                            placeholder={isRTL ? "كلمة المرور" : "Password"}
-                            value={view === 'admin' ? password : empPassword}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => view === 'admin' ? setPassword(e.target.value) : setEmpPassword(e.target.value)}
-                            theme={theme}
-                          />
-                        )}
-                      </>
-                    )}
-                    {error && <p className="text-red-500 text-center text-xs font-bold animate-pulse">{error}</p>}
-                    <button type="submit" disabled={loading} className="w-full py-4 bg-[#C4B687] text-black rounded-xl font-bold text-lg shadow-lg hover:brightness-110 active:scale-95 transition-all mt-4">
-                      {loading ? "..." : (isRTL ? "تأكيد الدخول" : "Confirm Login")}
-                    </button>
-                    {!isRegistering && !isRecovering && view === 'employee' && (
-                      <div className="flex flex-col gap-3 mt-8 text-center border-t border-white/5 pt-6">
-                        <button type="button" onClick={() => setIsRegistering(true)} className={`text-xs font-medium hover:text-[#C4B687] transition-colors ${theme === 'dark' ? 'text-white/50' : 'text-zinc-500'}`}>{isRTL ? "موظف جديد؟ سجل الآن" : "New Employee? Register"}</button>
-                        <button type="button" onClick={() => setIsRecovering(true)} className="text-xs font-medium text-red-500 hover:text-red-600 transition-colors italic">{isRTL ? "نسيت كلمة المرور؟" : "Forgot Password?"}</button>
-                      </div>
-                    )}
-                  </form>
-                </div>
+        {/* Modal Injection */}
+        {showServiceModal && (
+          <ServiceRequestModal
+            type={serviceType}
+            onClose={() => setShowServiceModal(false)}
+            departments={departments}
+            companies={companies}
+            theme={theme}
+          />
+        )}
+
+        {/* Keep existing login form for Admin/Gate views */}
+        {(view === 'admin' || view === 'gate') && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-xl p-4 animate-in fade-in zoom-in-95">
+            <div className="relative w-full max-w-md">
+              <button onClick={() => setView('main')} className="absolute -top-12 right-0 text-white/50 hover:text-white text-xl font-bold">✕ Close</button>
+              <div className={`p-10 rounded-[3rem] border border-[#C4B687]/30 shadow-2xl bg-black relative overflow-hidden`}>
+                <div className="absolute top-0 left-0 w-full h-2 bg-[#C4B687]"></div>
+
+                <h3 className="text-2xl font-black text-center text-white mb-8">
+                  {view === 'admin' ? (isRTL ? "دخول مركز الإدارة" : "Command Center Login") : (isRTL ? "دخول البوابة الأمنية" : "Security Gate Login")}
+                </h3>
+
+                <form onSubmit={view === 'admin' ? handleLogin : handleEmployeeLogin} className="space-y-4">
+                  <InputBox
+                    placeholder={view === 'admin' ? (isRTL ? "اسم المستخدم" : "Username") : (isRTL ? "الرقم الوظيفي" : "Emp ID")}
+                    value={view === 'admin' ? username : empIdLogin}
+                    onChange={e => view === 'admin' ? setUsername(e.target.value) : setEmpIdLogin(e.target.value)}
+                    theme="dark"
+                  />
+                  <InputBox
+                    type="password"
+                    placeholder={isRTL ? "كلمة المرور" : "Password"}
+                    value={view === 'admin' ? password : empPassword}
+                    onChange={e => view === 'admin' ? setPassword(e.target.value) : setEmpPassword(e.target.value)}
+                    theme="dark"
+                  />
+                  {error && <p className="text-red-500 text-center text-xs font-bold">{error}</p>}
+
+                  <button type="submit" className="w-full py-4 bg-[#C4B687] text-black rounded-xl font-bold text-lg hover:brightness-110 mt-4 transition-all">
+                    {isRTL ? "دخول النظام" : "Login System"}
+                  </button>
+                </form>
               </div>
             </div>
           </div>
         )}
+
       </main>
 
       <footer className="p-8 text-center opacity-40 text-[10px] font-black tracking-[0.4em] text-[#C4B687] uppercase">
@@ -505,6 +474,24 @@ function MenuCard({ icon, title, desc, onClick, featured = false, theme }: MenuC
         {desc}
       </p>
       {featured && <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#C4B687] to-transparent animate-pulse"></div>}
+    </div>
+  );
+}
+
+function ServiceCard({ title, titleAr, color, textColor, icon, onClick }: any) {
+  return (
+    <div
+      onClick={onClick}
+      className={`relative overflow-hidden group p-6 rounded-2xl border-b-4 shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer ${color}`}
+    >
+      <div className="flex justify-between items-start relative z-10">
+        <div>
+          <h4 className={`text-lg font-black uppercase tracking-tight ${textColor}`}>{title}</h4>
+          <p className={`text-sm font-bold opacity-70 ${textColor}`}>{titleAr}</p>
+        </div>
+        <span className="text-4xl group-hover:scale-110 transition-transform">{icon}</span>
+      </div>
+      <div className="absolute top-0 right-0 w-20 h-20 bg-black/5 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-150"></div>
     </div>
   );
 }

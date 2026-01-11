@@ -1,0 +1,349 @@
+import React, { useState } from 'react';
+import { db } from '../../firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { uploadToCloudinary } from '../../utils/cloudinary';
+import { generateOfficialPDF } from '../../utils/pdfGenerator';
+import type { StructureItem } from '../../types';
+
+interface ServiceRequestModalProps {
+    type: 'employee_card' | 'contractor_card' | 'private_vehicle' | 'company_vehicle' | 'contractor_vehicle' | 'inquiry';
+    onClose: () => void;
+    departments: StructureItem[];
+    companies: StructureItem[];
+    theme: 'light' | 'dark';
+}
+
+export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, onClose, departments, companies }) => {
+    const [loading, setLoading] = useState(false);
+    const [formData, setFormData] = useState<any>({
+        requestType: 'new', // new, renew, lost, damaged
+        // Personal Fields
+        fullNameAr: '', fullNameEn: '',
+        empId: '', title: '', grade: '',
+        nationality: '', dob: '', natId: '',
+        placeOfBirth: '', bloodGroup: '',
+        mobile: '',
+        dept: '', section: '',
+
+        // License/Vehicle Fields (for permits)
+        licenseType: '', licenseNo: '', licenseExpiry: '',
+        plateNo: '', vehicleColor: '', vehicleModel: '', vehicleType: '',
+        ownerName: '', permitType: 'permanent', // permanent, temp, visitor
+    });
+
+    const [files, setFiles] = useState<{ [key: string]: File | null }>({
+        personalPhoto: null,
+        nationalIdCard: null,
+        maadenCard: null,
+        driverLicense: null,
+        vehicleReg: null, // Istimara
+        insurance: null,
+    });
+
+
+
+    // --- Dynamic Labels & Config based on Type ---
+    const getConfig = () => {
+        switch (type) {
+            case 'employee_card':
+                return {
+                    title: "Employee ID Card Request / طلب بطاقة موظف",
+                    color: "border-[#C4B687]",
+                    penalties: "Important: Loss of card due to negligence will result in a written warning and a 2-day salary deduction. \n تنبيه هام: فقدان البطاقة بسبب الإهمال يترتب عليه إنذار خطي وحسم أجر يومين من الراتب.",
+                    requiredFiles: ['personalPhoto', 'nationalIdCard']
+                };
+            case 'contractor_card':
+                return {
+                    title: "Contractor ID Request / طلب بطاقة مقاول",
+                    color: "border-orange-600",
+                    penalties: "Fines for lost card: 1st time 500 SAR, 2nd time 1000 SAR, 3rd time Ban. Late return fine: 100 SAR/week. \n غرامة فقدان البطاقة: 500 ريال للمرة الأولى، 1000 ريال للثانية، حرمان نهائي للثالثة. تأخير التسليم: 100 ريال أسبوعياً.",
+                    requiredFiles: ['personalPhoto', 'nationalIdCard', 'maadenCard']
+                };
+            case 'private_vehicle':
+            case 'company_vehicle':
+            case 'contractor_vehicle':
+                return {
+                    title: "Vehicle Permit Request / طلب تصريح مركبة",
+                    color: "border-green-600",
+                    penalties: "Strict adherence to traffic rules inside the mine is mandatory. Speed limit 30-50 km/h. \n يجب الالتزام بقواعد المرور داخل المنجم. السرعة المحددة 30-50 كم/س.",
+                    requiredFiles: ['driverLicense', 'vehicleReg', 'insurance', 'maadenCard']
+                };
+            default: return { title: "Inquiry", color: "border-gray-500", penalties: "", requiredFiles: [] };
+        }
+    };
+
+    const config = getConfig();
+
+    const handleFileChange = (key: string, e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setFiles({ ...files, [key]: e.target.files[0] });
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+
+        // 1. Validation
+        const missingFiles = config.requiredFiles.filter(key => !files[key]);
+        if (missingFiles.length > 0) {
+            alert(`Missing required documents / المستندات المطلوبة ناقصة: \n ${missingFiles.join(', ')}`);
+            setLoading(false);
+            return;
+        }
+
+        try {
+            // 2. Upload Files
+            const attachments: any = {};
+            for (const key of Object.keys(files)) {
+                const file = files[key];
+                if (file) {
+                    const url = await uploadToCloudinary(file);
+                    attachments[key] = url;
+                }
+            }
+
+            // 3. Save to Firestore
+            const docRef = await addDoc(collection(db, "security_requests"), {
+                type,
+                ...formData,
+                attachments,
+                status: "pending",
+                createdAt: serverTimestamp(),
+                submittedAt: new Date().toISOString(),
+            });
+
+            // 4. Generate PDF
+            // We wait a moment for the 'OfficiaView' to be fully rendered with data if needed
+            await new Promise(r => setTimeout(r, 500));
+            await generateOfficialPDF("official-form-view", `Request_${docRef.id}`);
+
+            alert("Request Submitted Successfully & PDF Generated! \n تم تقديم الطلب بنجاح وتم تحميل نسخة PDF!");
+            onClose();
+
+        } catch (err) {
+            console.error(err);
+            alert("Error submitting request / حدث خطأ أثناء تقديم الطلب");
+        }
+        setLoading(false);
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4 overflow-y-auto">
+            <div className={`w-full max-w-4xl bg-[#f8f9fa] rounded-none shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden border-t-8 ${config.color} animate-in zoom-in-95 duration-300`}>
+
+                {/* Header */}
+                <div className="p-6 border-b flex justify-between items-start bg-zinc-100">
+                    <div>
+                        <h2 className="text-2xl font-black text-zinc-800 uppercase tracking-tighter">{config.title}</h2>
+                        <p className="text-zinc-500 text-xs font-bold mt-1">Please fill all fields accurately / يرجى تعبئة جميع الحقول بدقة</p>
+                    </div>
+                    <button onClick={onClose} className="text-zinc-400 hover:text-red-600 text-3xl font-black transition-colors">&times;</button>
+                </div>
+
+                {/* Scrollable Form Content */}
+                <div className="flex-1 overflow-y-auto p-8 relative">
+
+                    <form onSubmit={handleSubmit} className="space-y-8">
+
+                        {/* Request Type */}
+                        <div className="grid grid-cols-4 gap-4 bg-zinc-50 p-4 rounded-xl border border-zinc-200">
+                            {['new', 'renew', 'lost', 'damaged'].map(rt => (
+                                <label key={rt} className={`flex flex-col items-center justify-center p-3 rounded-lg border-2 cursor-pointer transition-all ${formData.requestType === rt ? 'border-[#C4B687] bg-[#C4B687]/10' : 'border-transparent hover:bg-zinc-100'}`}>
+                                    <input type="radio" name="reqType" value={rt} checked={formData.requestType === rt} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, requestType: e.target.value })} className="hidden" />
+                                    <span className="text-sm font-bold uppercase">{rt}</span>
+                                    <span className="text-xs font-serif opacity-70">
+                                        {rt === 'new' ? 'جديد' : rt === 'renew' ? 'تجديد' : rt === 'lost' ? 'بدل فاقد' : 'بدل تالف'}
+                                    </span>
+                                </label>
+                            ))}
+                        </div>
+
+                        {/* Personal Information Section */}
+                        <SectionTitle title="Personal Information / البيانات الشخصية" />
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <Input label="Full Name (English) / الاسم بالإنجليزية" value={formData.fullNameEn} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, fullNameEn: e.target.value })} required />
+                            <Input label="Full Name (Arabic) / الاسم بالعربية" value={formData.fullNameAr} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, fullNameAr: e.target.value })} dir="rtl" required />
+                            <Input label="ID Number / رقم الهوية/الإقامة" value={formData.natId} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, natId: e.target.value })} required />
+
+                            <Input label="Employee ID / الرقم الوظيفي" value={formData.empId} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, empId: e.target.value })} required />
+                            <Input label="Job Title / المسمى الوظيفي" value={formData.title} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, title: e.target.value })} required />
+                            <Input label="Grade / الدرجة" value={formData.grade} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, grade: e.target.value })} />
+
+                            <Input label="Nationality / الجنسية" value={formData.nationality} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, nationality: e.target.value })} required />
+                            <Input label="Date of Birth / تاريخ الميلاد" type="date" value={formData.dob} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, dob: e.target.value })} required />
+                            <Input label="Place of Birth / مكان الميلاد" value={formData.placeOfBirth} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, placeOfBirth: e.target.value })} required />
+
+                            <Input label="Mobile No / رقم الجوال" value={formData.mobile} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, mobile: e.target.value })} required />
+                            <Input label="Blood Group / فصيلة الدم" value={formData.bloodGroup} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, bloodGroup: e.target.value })} required />
+
+                            {/* Affiliation Dropdown */}
+                            <div className="flex flex-col gap-1">
+                                <label className="text-xs font-black text-zinc-500 uppercase">Affiliation / التبعية</label>
+                                <select
+                                    className="p-3 border rounded-none bg-white font-bold text-sm outline-none focus:border-[#C4B687]"
+                                    value={type.includes('contractor') ? formData.companyName : formData.dept}
+                                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => type.includes('contractor') ? setFormData({ ...formData, companyName: e.target.value }) : setFormData({ ...formData, dept: e.target.value })}
+                                >
+                                    <option value="">-- Select / اختر --</option>
+                                    {type.includes('contractor')
+                                        ? companies.map(c => <option key={c.id} value={c.name}>{c.name}</option>)
+                                        : departments.map(d => <option key={d.id} value={d.name}>{d.name}</option>)
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Vehicle Section (Conditional) */}
+                        {(type.includes('vehicle')) && (
+                            <>
+                                <SectionTitle title="Vehicle & License Data / بيانات المركبة والرخصة" />
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                    <Input label="License Type / نوع الرخصة" value={formData.licenseType} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, licenseType: e.target.value })} />
+                                    <Input label="License No / رقم الرخصة" value={formData.licenseNo} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, licenseNo: e.target.value })} />
+                                    <Input label="Expiry Date / تاريخ الانتهاء" type="date" value={formData.licenseExpiry} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, licenseExpiry: e.target.value })} />
+                                    <div className="hidden lg:block"></div> {/* Spacer */}
+
+                                    <Input label="Plate No / رقم اللوحة" value={formData.plateNo} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, plateNo: e.target.value })} />
+                                    <Input label="Model / الموديل" value={formData.vehicleModel} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, vehicleModel: e.target.value })} />
+                                    <Input label="Color / اللون" value={formData.vehicleColor} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, vehicleColor: e.target.value })} />
+                                    <Input label="Type / النوع" value={formData.vehicleType} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, vehicleType: e.target.value })} />
+                                </div>
+                            </>
+                        )}
+
+                        {/* Attachments Section */}
+                        <SectionTitle title="Required Attachments / المرفقات المطلوبة" />
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            {config.requiredFiles.map(fileKey => (
+                                <div key={fileKey} className="border-2 border-dashed border-zinc-300 rounded-xl p-4 flex flex-col items-center justify-center hover:bg-zinc-50 transition-colors">
+                                    <span className="text-2xl mb-2">📂</span>
+                                    <span className="text-[10px] font-bold uppercase text-zinc-600 mb-2">{fileKey.replace(/([A-Z])/g, ' $1')}</span>
+                                    <input type="file" accept="image/*" onChange={(e) => handleFileChange(fileKey, e)} className="text-[10px] w-full file:mr-2 file:py-1 file:px-2 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#C4B687]/10 file:text-[#C4B687] hover:file:bg-[#C4B687]/20" />
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Penalties Notice */}
+                        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg">
+                            <h4 className="text-red-700 font-bold text-sm mb-1">LEGAL NOTICE / تنويه قانوني</h4>
+                            <p className="text-red-600 text-xs font-medium whitespace-pre-line leading-relaxed">
+                                {config.penalties}
+                            </p>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex justify-end gap-4 border-t pt-6 bg-white sticky bottom-0 z-20">
+                            <button type="button" onClick={onClose} className="px-6 py-3 font-bold text-zinc-500 hover:text-zinc-800 transition-colors">Cancel / إلغاء</button>
+                            <button type="submit" disabled={loading} className="px-8 py-3 bg-[#C4B687] text-white font-black text-sm uppercase tracking-wider rounded shadow-lg hover:shadow-xl hover:bg-[#b3a575] transition-all disabled:opacity-50">
+                                {loading ? "Processing..." : "Submit Request / إرسال الطلب"}
+                            </button>
+                        </div>
+                    </form>
+
+                </div>
+
+                {/* Hidden Official PDF Template (Rendered off-screen or visibly for debug) */}
+                {/* We keep it in the DOM but hidden from view, visible to html2canvas */}
+                <div className="absolute top-0 left-0 -z-50 w-[210mm] bg-white text-black p-10 font-serif" id="official-form-view">
+                    {/* Official Letterhead */}
+                    <div className="flex justify-between items-center border-b-2 border-[#C4B687] pb-6 mb-8">
+                        <div className="text-left">
+                            <h1 className="text-2xl font-bold uppercase tracking-widest text-[#C4B687]">MA'ADEN <span className="text-zinc-400">|</span> Gold</h1>
+                            <p className="text-xs text-zinc-500 font-bold mt-1">Al Duwaihi Gold Mine - Security Department</p>
+                        </div>
+                        <div className="text-right">
+                            <h1 className="text-2xl font-bold text-[#C4B687]">معادن <span className="text-zinc-400">|</span> للذهب</h1>
+                            <p className="text-xs text-zinc-500 font-bold mt-1">منجم الدويحي للذهب - إدارة الأمن الصناعي</p>
+                        </div>
+                    </div>
+
+                    <div className="text-center mb-8">
+                        <h2 className="text-3xl font-black uppercase underline decoration-[#C4B687] underline-offset-8 mb-2">{config.title}</h2>
+                        <p className="text-sm font-bold text-zinc-400">Reference: {new Date().getTime().toString().slice(-8)}</p>
+                    </div>
+
+                    <table className="w-full border-collapse border border-zinc-300 text-sm mb-8">
+                        <tbody>
+                            <tr className="bg-zinc-50">
+                                <td className="border p-3 font-bold w-1/4">Request Type / نوع الطلب</td>
+                                <td className="border p-3 w-1/4 uppercase">{formData.requestType}</td>
+                                <td className="border p-3 font-bold w-1/4">Date / التاريخ</td>
+                                <td className="border p-3 w-1/4">{new Date().toLocaleDateString('en-GB')}</td>
+                            </tr>
+                            <tr>
+                                <td className="border p-3 font-bold">Name (En)</td>
+                                <td className="border p-3 font-mono">{formData.fullNameEn}</td>
+                                <td className="border p-3 font-bold">الاسم (عربي)</td>
+                                <td className="border p-3 font-serif dir-rtl">{formData.fullNameAr}</td>
+                            </tr>
+                            <tr className="bg-zinc-50">
+                                <td className="border p-3 font-bold">ID No / الهوية</td>
+                                <td className="border p-3 font-mono">{formData.natId}</td>
+                                <td className="border p-3 font-bold">Emp ID / الوظيفي</td>
+                                <td className="border p-3 font-mono">{formData.empId}</td>
+                            </tr>
+                            <tr>
+                                <td className="border p-3 font-bold">Nationality / الجنسية</td>
+                                <td className="border p-3">{formData.nationality}</td>
+                                <td className="border p-3 font-bold">Mobile / الجوال</td>
+                                <td className="border p-3 font-mono">{formData.mobile}</td>
+                            </tr>
+                            {(type.includes('vehicle')) && (
+                                <>
+                                    <tr className="bg-zinc-100"><td colSpan={4} className="border p-2 text-center font-bold text-[#C4B687]">VEHICLE DETAILS / بيانات المركبة</td></tr>
+                                    <tr>
+                                        <td className="border p-3 font-bold">Plate No / اللوحة</td>
+                                        <td className="border p-3 font-mono text-lg">{formData.plateNo}</td>
+                                        <td className="border p-3 font-bold">Type/Color / النوع واللون</td>
+                                        <td className="border p-3">{formData.vehicleType} - {formData.vehicleColor}</td>
+                                    </tr>
+                                </>
+                            )}
+                        </tbody>
+                    </table>
+
+                    {/* Footer / Signature */}
+                    <div className="mt-12 flex justify-between items-end">
+                        <div className="text-center">
+                            <div className="mb-4 text-xs font-bold text-zinc-400">DIGITAL SIGNATURE / التوقيع الرقمي</div>
+                            <div className="font-dancing text-2xl text-blue-900 border-b border-black pb-1 mb-1 px-8">{formData.fullNameEn}</div>
+                            <p className="text-[10px] text-zinc-400">Signed at: {new Date().toLocaleString()}</p>
+                        </div>
+
+                        <div className="text-center opacity-30">
+                            <div className="w-24 h-24 border-4 border-double border-[#C4B687] rounded-full flex items-center justify-center rotate-[-15deg]">
+                                <span className="text-xs font-black uppercase text-[#C4B687]">Security<br />Approval</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="absolute bottom-10 left-0 w-full text-center text-[10px] text-zinc-300 uppercase tracking-[0.5em]">
+                        Official Document • Maaden Gold • Security Control
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    );
+};
+
+// --- Helper Subcomponents ---
+
+const SectionTitle = ({ title }: { title: string }) => (
+    <div className="flex items-center gap-4 py-4 border-b border-[#C4B687]/20 mb-4 mt-6">
+        <div className="h-2 w-2 bg-[#C4B687] rotate-45"></div>
+        <h3 className="text-sm font-black text-zinc-800 uppercase tracking-widest">{title}</h3>
+    </div>
+);
+
+const Input = ({ label, dir = 'ltr', ...props }: any) => (
+    <div className="flex flex-col gap-1">
+        <label className="text-[10px] font-black text-zinc-500 uppercase">{label}</label>
+        <input
+            {...props}
+            dir={dir}
+            className={`p-3 border-b-2 border-zinc-200 bg-transparent outline-none focus:border-[#C4B687] transition-colors font-bold text-zinc-800 placeholder-zinc-300 ${dir === 'rtl' ? 'font-serif' : 'font-mono'}`}
+        />
+    </div>
+);
