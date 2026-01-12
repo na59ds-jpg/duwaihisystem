@@ -16,15 +16,15 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
     const [loading, setLoading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState("");
 
+    // Updated field names: natId -> idNumber
     const [formData, setFormData] = useState<any>({
         requestType: 'new',
         fullNameAr: '', fullNameEn: '',
         empId: '', title: '', grade: '',
-        nationality: '', dob: '', natId: '',
+        nationality: '', dob: '', idNumber: '', // Unified Field Name
         placeOfBirth: '', bloodGroup: '',
         mobile: '',
         dept: '', section: '',
-        // License/Vehicle Fields
         licenseType: '', licenseNo: '', licenseExpiry: '',
         plateNo: '', vehicleColor: '', vehicleModel: '', vehicleType: '',
         ownerName: '', permitType: 'permanent',
@@ -52,7 +52,6 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
         if (e.target.files && e.target.files[0]) setFiles({ ...files, [key]: e.target.files[0] });
     };
 
-    // --- TEXT-FIRST SUBMISSION STRATEGY (No PDF) ---
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -66,7 +65,6 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
         }
 
         try {
-            // 1. Generate ID & Prepare Initial Payload
             const uniqueId = `MS-${Math.floor(1000 + Math.random() * 9000)}`;
             const submissionDate = new Date().toISOString();
 
@@ -83,10 +81,10 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
 
             setUploadProgress("جاري حفظ البيانات...");
 
+            // Explicit collection: security_requests
             const docRef = await addDoc(collection(db, "security_requests"), payload);
             console.log("Document created successfully with ID:", docRef.id);
 
-            // 2. Upload Files
             setUploadProgress("جاري رفع المرفقات...");
             const attachments: any = {};
 
@@ -102,7 +100,6 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
                 }
             }
 
-            // 3. Update Document with Attachments
             setUploadProgress("جاري إنهاء الطلب...");
             await updateDoc(doc(db, "security_requests", docRef.id), {
                 attachments,
@@ -121,7 +118,6 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
         }
     };
 
-    // --- Search Logic ---
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResult, setSearchResult] = useState<any>(null);
     const [searchLoading, setSearchLoading] = useState(false);
@@ -133,7 +129,8 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
             let q = query(collection(db, "security_requests"), where("requestId", "==", searchQuery.trim()));
             let snap = await getDocs(q);
             if (snap.empty) {
-                q = query(collection(db, "security_requests"), where("natId", "==", searchQuery.trim()));
+                // Unified Field Search
+                q = query(collection(db, "security_requests"), where("idNumber", "==", searchQuery.trim()));
                 snap = await getDocs(q);
             }
             if (!snap.empty) setSearchResult({ id: snap.docs[0].id, ...snap.docs[0].data() });
@@ -150,7 +147,6 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
 
             <div className="w-full max-w-4xl rounded-[2.5rem] relative flex flex-col max-h-[90vh] overflow-hidden border border-[#C4B687]/30 animate-in zoom-in-95 duration-500 glass-card bg-zinc-900/95 shadow-[0_20px_60px_rgba(0,0,0,0.5)]">
 
-                {/* Header */}
                 <div className="p-6 border-b border-[#C4B687]/20 flex justify-between items-start bg-white/5 backdrop-blur-md">
                     <div>
                         <h2 className="text-2xl font-black text-[#C4B687] uppercase tracking-tighter flex items-center gap-3">
@@ -162,9 +158,7 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
                     <button onClick={onClose} className="text-zinc-500 hover:text-red-500 text-3xl font-black transition-colors w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10">&times;</button>
                 </div>
 
-                {/* Content */}
                 <div className="flex-1 overflow-y-auto p-8 relative custom-scrollbar">
-                    {/* Overlay for Loading Text */}
                     {loading && (
                         <div className="absolute inset-0 z-[60] bg-black/80 flex flex-col items-center justify-center text-white backdrop-blur-sm">
                             <span className="text-4xl animate-bounce mb-4">🚀</span>
@@ -195,7 +189,6 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
                         </div>
                     ) : (
                         <form onSubmit={handleSubmit} className="space-y-8">
-                            {/* Type Selection */}
                             <div className="grid grid-cols-4 gap-4 bg-black/20 p-2 rounded-2xl border border-white/5">
                                 {['new', 'renew', 'lost', 'damaged'].map(rt => (
                                     <label key={rt} className={`flex flex-col items-center justify-center p-3 rounded-xl cursor-pointer transition-all border ${formData.requestType === rt ? 'border-[#C4B687] bg-[#C4B687] text-black' : 'border-transparent text-zinc-500 hover:bg-white/5'}`}>
@@ -205,12 +198,11 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
                                 ))}
                             </div>
 
-                            {/* Personal Info */}
                             <SectionTitle title="البيانات الشخصية / Personal Information" />
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-white">
                                 <Input label="الاسم الكامل (En)" value={formData.fullNameEn} onChange={(e: any) => setFormData({ ...formData, fullNameEn: e.target.value })} required dir="ltr" />
                                 <Input label="الاسم الكامل (عربي)" value={formData.fullNameAr} onChange={(e: any) => setFormData({ ...formData, fullNameAr: e.target.value })} dir="rtl" required />
-                                <Input label="رقم الهوية / الإقامة" value={formData.natId} onChange={(e: any) => setFormData({ ...formData, natId: e.target.value })} required />
+                                <Input label="رقم الهوية / الإقامة" value={formData.idNumber} onChange={(e: any) => setFormData({ ...formData, idNumber: e.target.value })} required />
                                 <Input label="الرقم الوظيفي" value={formData.empId} onChange={(e: any) => setFormData({ ...formData, empId: e.target.value })} required />
                                 <Input label="المسمى الوظيفي" value={formData.title} onChange={(e: any) => setFormData({ ...formData, title: e.target.value })} required />
                                 <Input label="المرتبة (Grade)" value={formData.grade} onChange={(e: any) => setFormData({ ...formData, grade: e.target.value })} />
@@ -228,7 +220,6 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
                                 </div>
                             </div>
 
-                            {/* Vehicle Info */}
                             {(type.includes('vehicle')) && (
                                 <>
                                     <SectionTitle title="بيانات المركبة / Vehicle Data" />
@@ -241,7 +232,6 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
                                 </>
                             )}
 
-                            {/* Attachments */}
                             <SectionTitle title="المرفقات / Attachments" />
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                 {config.requiredFiles.map(fileKey => (
@@ -253,7 +243,6 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
                                 ))}
                             </div>
 
-                            {/* Submit */}
                             <div className="flex justify-end gap-4 pt-6 border-t border-white/10">
                                 <button type="button" onClick={onClose} className="px-8 py-3 font-bold text-zinc-500 hover:text-white transition-colors">إلغاء</button>
                                 <button type="submit" disabled={loading} className="px-10 py-3 bg-[#C4B687] text-black font-black text-sm uppercase rounded-xl hover:scale-105 transition-all shadow-[0_0_20px_rgba(196,182,135,0.4)] disabled:opacity-50">
