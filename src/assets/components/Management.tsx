@@ -16,17 +16,7 @@ import { GatePass } from "./GatePass";
 import { RequestsManager } from "./RequestsManager";
 import * as XLSX from 'xlsx';
 
-/**
- * MASAR - Strategic Admin Portal (v6.0)
- * FULL PRODUCTION VERSION - NO SHORTCUTS.
- * FEATURE: Advanced Account Monitoring with Compact Table & Search.
- * FIXED: All Visibility issues in Light Mode (Text-Zinc-900).
- * FIXED: TS6133 Error (All functions connected).
- */
-
 import type { StructureItem, GateRecord, User, VisitorLog, Announcement } from "../../types";
-
-// ... (Imports remain same)
 
 export function Management() {
   const { user, theme, navigateTo, activeFilter, language } = useApp();
@@ -39,21 +29,19 @@ export function Management() {
   const [activeSystem, setActiveSystem] = useState<any>("main");
   const [activeSubView, setActiveSubView] = useState<string>("list");
 
-  // بيانات الهيكلية والحسابات
   const [structureItems, setStructureItems] = useState<StructureItem[]>([]);
   const [securityGates, setSecurityGates] = useState<GateRecord[]>([]);
   const [portalUsers, setPortalUsers] = useState<User[]>([]);
   const [staff, setStaff] = useState<User[]>([]);
   const [visitorLogs, setVisitorLogs] = useState<VisitorLog[]>([]);
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]); // State for announcements
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
 
-  // محرك البحث والنماذج
   const [searchQuery, setSearchQuery] = useState("");
   const [inputValue, setInputValue] = useState("");
   const [gateNameAr, setGateNameAr] = useState("");
   const [gateNameEn, setGateNameEn] = useState("");
   const [staffForm, setStaffForm] = useState({ name: "", empId: "", password: "", gateId: "" });
-  const [announcementForm, setAnnouncementForm] = useState({ title: "", content: "", priority: "Normal" }); // Announcement Form
+  const [announcementForm, setAnnouncementForm] = useState({ title: "", content: "", priority: "Normal" });
   const [auditFilter, setAuditFilter] = useState<"موظف" | "مقاول">("موظف");
 
   useEffect(() => {
@@ -61,41 +49,32 @@ export function Management() {
     else if (activeFilter === "contractors") setActiveSystem("contractors");
     else if (activeFilter === "security_control") setActiveSystem("security_control");
     else if (activeFilter === "accounts_audit") setActiveSystem("accounts_audit");
-    else if (activeFilter === "communications") setActiveSystem("communications"); // New filter
-
+    else if (activeFilter === "communications") setActiveSystem("communications");
     else setActiveSystem("main");
     setActiveSubView("list");
   }, [activeFilter]);
 
-
-
   useEffect(() => {
-    // 1. جلب الهيكل التنظيمي (أقسام وشركات)
     const unsubStructure = onSnapshot(query(collection(db, "structure"), orderBy("createdAt", "desc")), (snapshot) => {
       setStructureItems(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as StructureItem)));
     });
 
-    // 2. جلب بوابات الأمن
     const unsubGates = onSnapshot(collection(db, "security_gates"), (snapshot) => {
       setSecurityGates(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as GateRecord)));
     });
 
-    // 3. جلب سجلات الحركات الميدانية
     const unsubLogs = onSnapshot(query(collection(db, "visitor_logs"), orderBy("timestamp", "desc")), (snapshot) => {
       setVisitorLogs(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as VisitorLog)));
     });
 
-    // 4. جلب حسابات طاقم SOC (رجال الأمن)
     const unsubStaff = onSnapshot(collection(db, "employees_accounts"), (snap) => {
       setStaff(snap.docs.map(d => ({ id: d.id, ...d.data() } as User)).filter(u => u.role === 'Gate'));
     });
 
-    // 5. جلب حسابات مستخدمي البوابة (الرقابة الخارجية)
     const unsubPortal = onSnapshot(collection(db, "portal_users"), (snap) => {
       setPortalUsers(snap.docs.map(d => ({ id: d.id, ...d.data() } as User)));
     });
 
-    // 6. جلب التنبيهات الأمنية
     const unsubAnnounce = onSnapshot(query(collection(db, "security_announcements"), orderBy("createdAt", "desc")), (snap) => {
       setAnnouncements(snap.docs.map(d => ({ id: d.id, ...d.data() } as Announcement)));
     });
@@ -103,7 +82,6 @@ export function Management() {
     return () => { unsubStructure(); unsubGates(); unsubLogs(); unsubStaff(); unsubPortal(); unsubAnnounce(); };
   }, []);
 
-  // دالة إعادة تفعيل الحساب
   const handleResetUser = async (userId: string) => {
     try {
       await updateDoc(doc(db, "portal_users", userId), { status: 'active', updatedAt: serverTimestamp() });
@@ -158,7 +136,6 @@ export function Management() {
 
   if (!isLeader) return <div className="p-20 text-center font-[900] text-red-500 text-3xl italic animate-pulse">🚫 {isRTL ? "دخول غير مصرح به للمنطقة الإدارية" : "UNAUTHORIZED STRATEGIC ACCESS"}</div>;
 
-  // منطق البحث والفلترة للحسابات
   const filteredPortalUsers = portalUsers.filter(u =>
     u.userType === auditFilter &&
     (u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -169,7 +146,6 @@ export function Management() {
   return (
     <div className={`p-6 md:p-10 space-y-10 animate-view font-['Cairo'] relative z-10 ${isDark ? 'text-white' : 'text-zinc-900'}`} dir={isRTL ? "rtl" : "ltr"}>
 
-      {/* هيدر التنقل الإستراتيجي */}
       <div className={`flex justify-between items-center p-8 rounded-[2.5rem] border shadow-2xl backdrop-blur-3xl transition-all ${isDark ? 'bg-black/40 border-white/5 shadow-black' : 'bg-white border-zinc-200 shadow-xl'}`}>
         <button
           onClick={() => { navigateTo("dashboard"); setActiveSystem("main"); setActiveSubView("list"); }}
@@ -195,10 +171,8 @@ export function Management() {
         </div>
       )}
 
-      {/* 0. إدارة طلبات الخدمة */}
       {activeSystem === "service_requests" && <RequestsManager onBack={() => setActiveSystem('main')} />}
 
-      {/* 1. رقابة الحسابات (جدول البحث المدمج) */}
       {activeSystem === "accounts_audit" && (
         <div className="space-y-6 animate-view">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
@@ -206,7 +180,6 @@ export function Management() {
               <button onClick={() => setAuditFilter("موظف")} className={`px-10 py-2.5 rounded-xl font-black text-[10px] uppercase transition-all ${auditFilter === 'موظف' ? 'bg-[#C4B687] text-black shadow-lg' : 'text-zinc-500 hover:text-[#C4B687]'}`}>{isRTL ? 'الموظفين' : 'Staff'}</button>
               <button onClick={() => setAuditFilter("مقاول")} className={`px-10 py-2.5 rounded-xl font-black text-[10px] uppercase transition-all ${auditFilter === 'مقاول' ? 'bg-amber-600 text-white shadow-lg' : 'text-zinc-500 hover:text-amber-600'}`}>{isRTL ? 'المقاولين' : 'Contractors'}</button>
             </div>
-
             <div className="relative w-full md:w-96 group">
               <input
                 type="text"
@@ -217,7 +190,6 @@ export function Management() {
               />
             </div>
           </div>
-
           <div className={`rounded-[2.5rem] border shadow-2xl overflow-hidden ${isDark ? 'bg-black/40 border-white/5 shadow-black' : 'bg-white border-zinc-100'}`}>
             <div className="overflow-x-auto">
               <table className="w-full text-right" dir={isRTL ? "rtl" : "ltr"}>
@@ -239,7 +211,7 @@ export function Management() {
                           <span className={`font-black text-sm ${isDark ? 'text-white' : 'text-zinc-900'}`}>{u.name || u.fullName}</span>
                         </div>
                       </td>
-                      <td className={`p-6 font-bold opacity-70`}>{u.empId}</td>
+                      <td className={`p-6 font-bold opacity-70 ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>{u.empId}</td>
                       <td className={`p-6 text-[11px] font-black uppercase ${isDark ? 'text-[#C4B687]' : 'text-zinc-600'}`}>{u.affiliation}</td>
                       <td className="p-6">
                         <span className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase ${u.status === 'active' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
@@ -261,7 +233,6 @@ export function Management() {
         </div>
       )}
 
-      {/* 2. التحكم الأمني والسجلات */}
       {activeSystem === "security_control" && activeSubView === "list" && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-view">
           <AdminCard icon="🏗️" title="إدارة البوابات" desc="Field Gates" onClick={() => setActiveSubView('gates')} theme={theme} />
@@ -271,7 +242,6 @@ export function Management() {
         </div>
       )}
 
-      {/* إدارة البوابات */}
       {activeSubView === "gates" && (
         <div className={`p-10 rounded-[3.5rem] border shadow-2xl animate-view ${isDark ? 'bg-black/40 border-white/5 shadow-black' : 'bg-white border-zinc-100'}`}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
@@ -293,7 +263,6 @@ export function Management() {
         </div>
       )}
 
-      {/* حسابات رجال الأمن */}
       {activeSubView === "security_staff" && (
         <div className={`p-10 rounded-[3.5rem] border shadow-2xl animate-view ${isDark ? 'bg-black/40 border-white/5 shadow-black' : 'bg-white border-zinc-100'}`}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
@@ -316,14 +285,10 @@ export function Management() {
                 </div>
               ))}
             </div>
-
-
-
           </div>
         </div>
       )}
 
-      {/* 3. هيكلة الأقسام والشركات (تصحيح النص الأبيض تماماً) */}
       {(activeSystem === "personnel" || activeSystem === "contractors") && activeSubView === "list" && (
         <div className={`p-10 rounded-[3.5rem] border shadow-2xl animate-view ${isDark ? 'bg-black/40 border-white/5 shadow-black' : 'bg-white border-zinc-100'}`}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
@@ -344,7 +309,6 @@ export function Management() {
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-4">
                       <div className={`w-3 h-3 rounded-full ${activeSystem === 'personnel' ? 'bg-blue-500' : 'bg-amber-600'} animate-pulse shadow-sm`}></div>
-                      {/* تم تصحيح اللون هنا باستخدام متغير isDark لضمان الظهور باللون الأسود في الوضع الفاتح */}
                       <span className={`font-[900] text-sm uppercase tracking-tighter ${isDark ? 'text-white' : 'text-zinc-900'}`}>{i.name}</span>
                     </div>
                     <button onClick={() => { if (confirm("Confirm Delete?")) deleteDoc(doc(db, "structure", i.id)); }} className="text-red-500/40 hover:text-red-500 transition-colors font-black">✕</button>
@@ -356,9 +320,6 @@ export function Management() {
         </div>
       )}
 
-
-
-      {/* 4. مركز التنبيهات والتعاميم */}
       {activeSystem === "communications" && (
         <div className={`p-10 rounded-[3.5rem] border shadow-2xl animate-view ${isDark ? 'bg-black/40 border-white/5 shadow-black' : 'bg-white border-zinc-100'}`}>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
@@ -382,7 +343,6 @@ export function Management() {
               </div>
               <button onClick={handleCreateAnnouncement} className="w-full py-5 bg-[#C4B687] text-black rounded-2xl font-[900] shadow-xl hover:brightness-110 active:scale-95 transition-all">نشر التنبيه 📢</button>
             </div>
-
             <div className="md:col-span-2 space-y-4 max-h-[600px] overflow-y-auto pr-4 custom-scrollbar">
               {announcements.map(a => (
                 <div key={a.id} className={`p-6 rounded-[2rem] border relative group ${a.priority === 'High' ? 'bg-red-900/10 border-red-500/30' : (isDark ? 'bg-white/5 border-white/5' : 'bg-zinc-50 border-zinc-200')}`}>

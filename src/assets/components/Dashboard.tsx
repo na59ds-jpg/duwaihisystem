@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { useApp } from "../../App"; 
-import { db } from "../../firebase"; 
+import { useApp } from "../../App";
+import { db } from "../../firebase";
 import { collection, onSnapshot, query, where, getDocs, limit, orderBy } from "firebase/firestore";
 
 /**
@@ -9,18 +9,18 @@ import { collection, onSnapshot, query, where, getDocs, limit, orderBy } from "f
  */
 
 export function Dashboard() {
-  const { language, theme, navigateTo } = useApp(); 
-  const isRTL = language === 'ar'; 
+  const { language, theme, navigateTo } = useApp();
+  const isRTL = language === 'ar';
   const isDark = theme === 'dark';
 
-  const [stats, setStats] = useState({ 
-    totalManpower: 0, 
+  const [stats, setStats] = useState({
+    totalManpower: 0,
     activeWorkIDs: 0,
     vehiclePermits: 0,
-    onSiteNow: 0 
+    onSiteNow: 0
   });
 
-  const [recentLogs, setRecentLogs] = useState<any[]>([]); 
+  const [recentLogs, setRecentLogs] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -29,8 +29,8 @@ export function Dashboard() {
 
     // 1. حساب إجمالي القوة البشرية (موظفين + مقاولين)
     const calculateManpower = async () => {
-      const empSnap = await getDocs(collection(db, "employees")); 
-      const conSnap = await getDocs(collection(db, "contractors")); 
+      const empSnap = await getDocs(collection(db, "employees"));
+      const conSnap = await getDocs(collection(db, "contractors"));
       setStats(p => ({ ...p, totalManpower: empSnap.size + conSnap.size }));
     };
     calculateManpower();
@@ -66,7 +66,7 @@ export function Dashboard() {
 
   return (
     <div className="space-y-8 animate-view font-['Cairo'] relative z-10" dir={isRTL ? "rtl" : "ltr"}>
-      
+
       {/* هيدر القيادة والسيطرة */}
       <div className={`p-8 rounded-[2.5rem] flex flex-col md:flex-row justify-between items-center border shadow-2xl backdrop-blur-xl transition-all ${isDark ? 'bg-black/40 border-white/5 shadow-black' : 'bg-white border-zinc-200'}`}>
         <div className={isRTL ? "text-right" : "text-left"}>
@@ -74,9 +74,9 @@ export function Dashboard() {
           <p className="text-[10px] font-black opacity-40 uppercase tracking-widest mt-1">Ad Duwaihi Mine - Strategic Operations Portal</p>
         </div>
         <div className={`mt-4 md:mt-0 p-4 px-10 rounded-2xl border shadow-inner ${isDark ? 'bg-white/5 border-white/5' : 'bg-zinc-50 border-zinc-100'}`}>
-            <span className="text-3xl font-black text-[#C4B687] tabular-nums tracking-widest">
-              {currentTime.toLocaleTimeString(isRTL ? 'ar-SA' : 'en-GB')}
-            </span>
+          <span className="text-3xl font-black text-[#C4B687] tabular-nums tracking-widest">
+            {currentTime.toLocaleTimeString(isRTL ? 'ar-SA' : 'en-GB')}
+          </span>
         </div>
       </div>
 
@@ -98,46 +98,46 @@ export function Dashboard() {
 
       {/* الرادارات الأمنية */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* رصد الحركات الميدانية */}
-          <div className={`p-8 rounded-[3rem] border shadow-2xl backdrop-blur-md ${isDark ? 'bg-black/40 border-white/5 shadow-black' : 'bg-white border-zinc-100'}`}>
-            <h3 className="text-[10px] font-black uppercase text-red-600 tracking-[0.4em] mb-8 flex items-center gap-3">
-              <span className="w-2 h-2 bg-red-600 rounded-full animate-ping"></span>
-              {isRTL ? 'رصد بوابات المنجم اللحظي' : 'Live Gate Movement Tracker'}
-            </h3>
-            <div className="space-y-4">
-               {recentLogs.map(log => (
-                 <div key={log.id} className="flex justify-between items-center p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-[#C4B687]/20 transition-all">
-                    <div className="flex items-center gap-4">
-                       <span className={`text-xl ${log.status === 'On-Site' ? 'text-emerald-500' : 'text-red-500'}`}>{log.status === 'On-Site' ? '📥' : '📤'}</span>
-                       <div>
-                          <p className="text-xs font-black">{log.visitorName || log.personName || log.fullName}</p>
-                          <p className="text-[8px] opacity-40 uppercase">{log.timestamp?.toDate().toLocaleTimeString()}</p>
-                       </div>
-                    </div>
-                    <span className="text-[9px] font-black text-[#C4B687]">{log.status === 'On-Site' ? (isRTL ? 'دخول' : 'In') : (isRTL ? 'خروج' : 'Out')}</span>
-                 </div>
-               ))}
-            </div>
+        {/* رصد الحركات الميدانية */}
+        <div className={`p-8 rounded-[3rem] border shadow-2xl backdrop-blur-md ${isDark ? 'bg-black/40 border-white/5 shadow-black' : 'bg-white border-zinc-100'}`}>
+          <h3 className="text-[10px] font-black uppercase text-red-600 tracking-[0.4em] mb-8 flex items-center gap-3">
+            <span className="w-2 h-2 bg-red-600 rounded-full animate-ping"></span>
+            {isRTL ? 'رصد بوابات المنجم اللحظي' : 'Live Gate Movement Tracker'}
+          </h3>
+          <div className="space-y-4">
+            {recentLogs.map(log => (
+              <div key={log.id} className="flex justify-between items-center p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-[#C4B687]/20 transition-all">
+                <div className="flex items-center gap-4">
+                  <span className={`text-xl ${log.status === 'On-Site' ? 'text-emerald-500' : 'text-red-500'}`}>{log.status === 'On-Site' ? '📥' : '📤'}</span>
+                  <div>
+                    <p className="text-xs font-black">{log.visitorName || log.personName || log.fullName}</p>
+                    <p className="text-[8px] opacity-40 uppercase">{log.timestamp?.toDate().toLocaleTimeString()}</p>
+                  </div>
+                </div>
+                <span className="text-[9px] font-black text-[#C4B687]">{log.status === 'On-Site' ? (isRTL ? 'دخول' : 'In') : (isRTL ? 'خروج' : 'Out')}</span>
+              </div>
+            ))}
           </div>
+        </div>
 
-          {/* تنبيهات انتهاء الصلاحية */}
-          <div className={`p-8 rounded-[3rem] border shadow-2xl backdrop-blur-md ${isDark ? 'bg-black/40 border-white/5 shadow-black' : 'bg-white border-zinc-100'}`}>
-            <h3 className="text-[10px] font-black uppercase text-[#C4B687] tracking-[0.5em] mb-8">{isRTL ? 'إنذار انتهاء الصلاحية' : 'Security Expiry Alerts'}</h3>
-            <div className="space-y-4">
-               {notifications.length > 0 ? notifications.map(note => (
-                 <div key={note.id} className="flex justify-between items-center p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-[#C4B687]/30 transition-all">
-                    <p className="text-xs font-black uppercase">{note.fullName}</p>
-                    <span className={`text-[8px] font-black px-3 py-1 rounded-lg ${note.alertStatus === 'EXPIRED' ? 'bg-red-500/20 text-red-500' : 'bg-amber-500/20 text-amber-500'}`}>
-                       {note.alertStatus === 'EXPIRED' ? (isRTL ? 'منتهي' : 'Expired') : (isRTL ? 'قريباً' : 'Soon')}
-                    </span>
-                 </div>
-               )) : (
-                 <div className="py-10 text-center">
-                    <p className="text-[10px] opacity-20 font-black uppercase tracking-widest">No Active Security Alerts</p>
-                 </div>
-               )}
-            </div>
+        {/* تنبيهات انتهاء الصلاحية */}
+        <div className={`p-8 rounded-[3rem] border shadow-2xl backdrop-blur-md ${isDark ? 'bg-black/40 border-white/5 shadow-black' : 'bg-white border-zinc-100'}`}>
+          <h3 className="text-[10px] font-black uppercase text-[#C4B687] tracking-[0.5em] mb-8">{isRTL ? 'إنذار انتهاء الصلاحية' : 'Security Expiry Alerts'}</h3>
+          <div className="space-y-4">
+            {notifications.length > 0 ? notifications.map(note => (
+              <div key={note.id} className="flex justify-between items-center p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-[#C4B687]/30 transition-all">
+                <p className="text-xs font-black uppercase">{note.fullName}</p>
+                <span className={`text-[8px] font-black px-3 py-1 rounded-lg ${note.alertStatus === 'EXPIRED' ? 'bg-red-500/20 text-red-500' : 'bg-amber-500/20 text-amber-500'}`}>
+                  {note.alertStatus === 'EXPIRED' ? (isRTL ? 'منتهي' : 'Expired') : (isRTL ? 'قريباً' : 'Soon')}
+                </span>
+              </div>
+            )) : (
+              <div className="py-10 text-center">
+                <p className="text-[10px] opacity-20 font-black uppercase tracking-widest">No Active Security Alerts</p>
+              </div>
+            )}
           </div>
+        </div>
       </div>
     </div>
   );

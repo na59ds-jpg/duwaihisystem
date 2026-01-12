@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { db } from '../../firebase';
-import { collection, addDoc, serverTimestamp, query, where, getDocs, updateDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs, updateDoc, doc, orderBy, limit } from 'firebase/firestore';
 import { uploadToCloudinary } from '../../utils/cloudinary';
 import type { StructureItem } from '../../types';
 
@@ -16,12 +16,11 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
     const [loading, setLoading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState("");
 
-    // Updated: Unified Field Names & Arabized Form
     const [formData, setFormData] = useState<any>({
         requestType: 'new',
         fullNameAr: '', fullNameEn: '',
         empId: '', title: '', grade: '',
-        nationality: 'السعودية', dob: '', idNumber: '', // Unified Field: idNumber
+        nationality: 'السعودية', dob: '', idNumber: '',
         placeOfBirth: '', bloodGroup: '',
         mobile: '',
         dept: '', section: '',
@@ -34,6 +33,38 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
         personalPhoto: null, nationalIdCard: null, maadenCard: null,
         driverLicense: null, vehicleReg: null, insurance: null,
     });
+
+    // --- وظيفة توليد الرقم التسلسلي الذكي (إصلاح الخطأ رقم 1) ---
+    const generateSmartId = async (serviceType: string) => {
+        let prefix = "REQ";
+        if (serviceType === 'employee_card') prefix = "EMP-CA";
+        else if (serviceType === 'contractor_card') prefix = "CON-CA";
+        else if (serviceType.includes('vehicle')) prefix = "VEH-PR";
+
+        try {
+            const q = query(
+                collection(db, "security_requests"),
+                where("type", "==", serviceType),
+                orderBy("requestId", "desc"),
+                limit(1)
+            );
+            const querySnapshot = await getDocs(q);
+
+            let nextNumber = 1;
+            if (!querySnapshot.empty) {
+                const lastId = querySnapshot.docs[0].data().requestId;
+                // استخراج الرقم من بعد البادئة (Prefix)
+                const lastNumberPart = lastId.replace(prefix, "");
+                const lastNumber = parseInt(lastNumberPart);
+                if (!isNaN(lastNumber)) nextNumber = lastNumber + 1;
+            }
+
+            return `${prefix}${String(nextNumber).padStart(4, '0')}`;
+        } catch (err) {
+            console.error("Error generating ID:", err);
+            return `${prefix}${Math.floor(1000 + Math.random() * 9000)}`;
+        }
+    };
 
     const getConfig = () => {
         switch (type) {
@@ -55,9 +86,8 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        setUploadProgress("جاري التحقق...");
+        setUploadProgress("جاري توليد رقم الطلب...");
 
-        // Basic Validation
         if (!formData.fullNameAr || !formData.idNumber || !formData.mobile) {
             alert("يرجى تعبئة الحقول الأساسية (الاسم، رقم الهوية، الجوال)");
             setLoading(false);
@@ -72,47 +102,39 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
         }
 
         try {
-            const uniqueId = `MS-${Math.floor(1000 + Math.random() * 9000)}`;
+            // 1. توليد الرقم الذكي بدلاً من العشوائي
+            const smartId = await generateSmartId(type);
             const submissionDate = new Date().toISOString();
 
             const payload = {
                 type,
-                requestId: uniqueId,
+                requestId: smartId,
                 ...formData,
-                status: "uploading",
+                status: "pending", // الحالة الافتراضية
                 createdAt: serverTimestamp(),
                 submittedAt: submissionDate,
                 attachments: {},
             };
-            Object.keys(payload).forEach(key => payload[key] === undefined && delete payload[key]);
 
             setUploadProgress("جاري حفظ البيانات...");
-
-            // Explicit collection: security_requests
             const docRef = await addDoc(collection(db, "security_requests"), payload);
-            console.log("Document created successfully with ID:", docRef.id);
 
+            // 2. رفع المرفقات وضمان ربطها (إصلاح الخطأ رقم 2)
             setUploadProgress("جاري رفع المرفقات...");
-            const attachments: any = {};
-
+            const uploadedAttachments: any = {};
             for (const key of Object.keys(files)) {
                 if (files[key]) {
-                    try {
-                        const url = await uploadToCloudinary(files[key]!);
-                        attachments[key] = url;
-                    } catch (uploadErr) {
-                        console.error(`Failed to upload ${key}:`, uploadErr);
-                    }
+                    const url = await uploadToCloudinary(files[key]!);
+                    uploadedAttachments[key] = url;
                 }
             }
 
-            setUploadProgress("جاري إنهاء الطلب...");
+            // 3. التحديث النهائي لضمان وصول المرفقات للإدارة
             await updateDoc(doc(db, "security_requests", docRef.id), {
-                attachments,
-                status: "pending"
+                attachments: uploadedAttachments
             });
 
-            alert(`✅ تم إرسال الطلب بنجاح! \n رقم الطلب: ${uniqueId}`);
+            alert(`✅ تم إرسال الطلب بنجاح! \n رقم الطلب: ${smartId}`);
             onClose();
 
         } catch (err: any) {
@@ -134,7 +156,6 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
             let q = query(collection(db, "security_requests"), where("requestId", "==", searchQuery.trim()));
             let snap = await getDocs(q);
             if (snap.empty) {
-                // Unified Field Search: idNumber
                 q = query(collection(db, "security_requests"), where("idNumber", "==", searchQuery.trim()));
                 snap = await getDocs(q);
             }
@@ -149,9 +170,7 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-[10px] p-4 font-['Tajawal']" dir="rtl">
-
             <div className="w-full max-w-4xl rounded-[2.5rem] relative flex flex-col max-h-[90vh] overflow-hidden border border-[#C4B687]/30 animate-in zoom-in-95 duration-500 glass-card bg-zinc-900/95 shadow-[0_20px_60px_rgba(0,0,0,0.5)]">
-
                 <div className="p-6 border-b border-[#C4B687]/20 flex justify-between items-start bg-white/5 backdrop-blur-md">
                     <div>
                         <h2 className="text-2xl font-black text-[#C4B687] uppercase tracking-tighter flex items-center gap-3">
@@ -180,18 +199,22 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
                                         <span className="text-5xl animate-bounce inline-block text-[#C4B687]">🔍</span>
                                         <h3 className="text-2xl font-black text-white">تتبع حالة الطلب</h3>
                                     </div>
-                                    <input type="text" placeholder="رقم الطلب (MS-XXXX) أو رقم الهوية" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                                    <input type="text" placeholder="رقم الطلب أو رقم الهوية" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
                                         className="w-full p-5 rounded-2xl border border-white/10 bg-white/5 focus:bg-white/10 text-white shadow-lg backdrop-blur-md font-black text-center text-lg focus:border-[#C4B687] outline-none transition-all uppercase placeholder:normal-case" />
                                     <button disabled={searchLoading} className="px-8 py-3 bg-[#C4B687] text-black rounded-xl font-black uppercase hover:scale-105 transition-all">{searchLoading ? "..." : "بحث عن الطلب"}</button>
                                 </form>
                             ) : (
                                 <div className="w-full p-8 rounded-[2rem] border border-white/10 bg-white/5 text-center">
-                                    <h2 className="text-2xl font-black text-white mb-2">{searchResult.status}</h2>
-                                    <p className="text-zinc-400">رقم الطلب: {searchResult.requestId}</p>
-                                    <div className="flex flex-col gap-2 mt-4 text-sm text-zinc-300">
-                                        <span>👤 {searchResult.fullNameAr}</span>
-                                        <span>🆔 {searchResult.idNumber}</span>
+                                    <div className={`inline-block px-4 py-1 rounded-full text-xs font-black mb-4 ${searchResult.status === 'pending' ? 'bg-yellow-500/20 text-yellow-500' : searchResult.status === 'approved' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
+                                        {searchResult.status === 'pending' ? 'قيد المراجعة' : searchResult.status === 'approved' ? 'تم القبول' : 'مرفوض'}
                                     </div>
+                                    <h2 className="text-2xl font-black text-white mb-2">{searchResult.fullNameAr}</h2>
+                                    <p className="text-zinc-400">رقم الطلب: {searchResult.requestId}</p>
+                                    {searchResult.rejectionReason && (
+                                        <div className="mt-4 p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
+                                            <p className="text-red-400 text-sm">سبب الرفض: {searchResult.rejectionReason}</p>
+                                        </div>
+                                    )}
                                     <button onClick={() => setSearchResult(null)} className="mt-6 text-[#C4B687] underline">بحث آخر</button>
                                 </div>
                             )}
