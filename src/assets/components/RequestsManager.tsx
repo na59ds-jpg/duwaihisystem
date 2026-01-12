@@ -5,12 +5,13 @@ import { useApp } from "../../App";
 
 export function RequestsManager({ onBack }: { onBack: () => void }) {
     const [requests, setRequests] = useState<any[]>([]);
+    const [filterType, setFilterType] = useState<'employee' | 'contractor'>('employee'); // حالة الفلترة الجديدة
     const { theme, language } = useApp();
     const isDark = theme === 'dark';
     const isRTL = language === 'ar';
 
     useEffect(() => {
-        // تصحيح: جلب الطلبات التي حالتها قيد الانتظار فقط لتنظيف القائمة بعد الإجراء
+        // جلب الطلبات قيد الانتظار فقط
         const q = query(
             collection(db, "security_requests"),
             where("status", "==", "pending"),
@@ -22,10 +23,19 @@ export function RequestsManager({ onBack }: { onBack: () => void }) {
         return () => unsub();
     }, []);
 
+    // تصفية الطلبات بناءً على التبويب المختار
+    const filteredRequests = requests.filter(r => {
+        if (filterType === 'employee') {
+            return r.type?.includes('employee') || r.type?.includes('private_vehicle');
+        } else {
+            return r.type?.includes('contractor') || r.type?.includes('contractor_vehicle');
+        }
+    });
+
     const handleStatusChange = async (reqId: string, newStatus: string) => {
         if (newStatus === 'rejected') {
             const reason = prompt(isRTL ? "يرجى إدخال سبب الرفض:" : "Please enter rejection reason:");
-            if (!reason) return; // إلغاء العملية إذا لم يتم إدخال سبب
+            if (!reason) return;
 
             await updateDoc(doc(db, "security_requests", reqId), {
                 status: 'rejected',
@@ -64,11 +74,27 @@ export function RequestsManager({ onBack }: { onBack: () => void }) {
 
     return (
         <div className={`p-10 rounded-[3.5rem] border shadow-2xl animate-view ${isDark ? 'bg-black/40 border-white/5 shadow-black' : 'bg-white border-zinc-100'} font-['Cairo']`} dir={isRTL ? "rtl" : "ltr"}>
-            <div className="flex justify-between items-center mb-8">
+
+            <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-6">
                 <div>
                     <h3 className="text-2xl font-[900] text-[#C4B687] uppercase tracking-tighter">{isRTL ? "إدارة طلبات الخدمة" : "Service Requests Management"}</h3>
-                    <p className="text-[10px] font-black opacity-50 uppercase tracking-widest">{isRTL ? "طلبات قيد المراجعة" : "Pending Operations"}</p>
+                    <p className="text-[10px] font-black opacity-50 uppercase tracking-widest">{isRTL ? "مركز تدقيق البيانات" : "Data Audit Center"}</p>
                 </div>
+
+                {/* أزرار الفلترة الجديدة لتسهيل الوصول للموظفين والمقاولين */}
+                <div className="flex gap-2 p-1.5 bg-black/10 rounded-2xl border border-white/5 shadow-inner">
+                    <button
+                        onClick={() => setFilterType('employee')}
+                        className={`px-8 py-2.5 rounded-xl font-black text-[10px] uppercase transition-all ${filterType === 'employee' ? 'bg-[#C4B687] text-black shadow-lg' : 'text-zinc-500 hover:text-[#C4B687]'}`}>
+                        {isRTL ? "قائمة الموظفين" : "Employees"}
+                    </button>
+                    <button
+                        onClick={() => setFilterType('contractor')}
+                        className={`px-8 py-2.5 rounded-xl font-black text-[10px] uppercase transition-all ${filterType === 'contractor' ? 'bg-amber-600 text-white shadow-lg' : 'text-zinc-500 hover:text-amber-600'}`}>
+                        {isRTL ? "قائمة المقاولين" : "Contractors"}
+                    </button>
+                </div>
+
                 <button onClick={onBack} className="px-6 py-2 rounded-xl bg-[#C4B687]/10 text-[#C4B687] hover:bg-[#C4B687] hover:text-black font-black transition-all">🔙 {isRTL ? "عودة" : "Back"}</button>
             </div>
 
@@ -85,7 +111,7 @@ export function RequestsManager({ onBack }: { onBack: () => void }) {
                         </tr>
                     </thead>
                     <tbody>
-                        {requests.map((r) => (
+                        {filteredRequests.map((r) => (
                             <tr key={r.id} className={`group transition-all ${isDark ? "bg-white/5 hover:bg-white/10" : "bg-zinc-50 hover:bg-zinc-100"} rounded-2xl`}>
                                 <td className="p-4 font-mono font-black text-[#C4B687] rounded-s-2xl">{r.requestId}</td>
                                 <td className="p-4">
@@ -97,7 +123,7 @@ export function RequestsManager({ onBack }: { onBack: () => void }) {
                                 <td className="p-4 font-mono font-bold opacity-70">{r.idNumber}</td>
                                 <td className="p-4">
                                     <span className="px-2 py-1 rounded-md bg-white/5 text-[9px] font-black border border-white/10">
-                                        {r.type === 'employee_card' ? (isRTL ? "بطاقة موظف" : "EMP Card") : (isRTL ? "مقاول/مركبة" : "Contractor/Veh")}
+                                        {r.type}
                                     </span>
                                 </td>
                                 <td className="p-4">
@@ -131,10 +157,10 @@ export function RequestsManager({ onBack }: { onBack: () => void }) {
                         ))}
                     </tbody>
                 </table>
-                {requests.length === 0 && (
+                {filteredRequests.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-24 opacity-20">
                         <span className="text-6xl mb-4">📥</span>
-                        <p className="font-black text-xl uppercase tracking-widest">{isRTL ? "صندوق الوارد فارغ" : "Inbox Clear"}</p>
+                        <p className="font-black text-xl uppercase tracking-widest">{isRTL ? "لا توجد طلبات معلقة حالياً" : "No Pending Requests"}</p>
                     </div>
                 )}
             </div>

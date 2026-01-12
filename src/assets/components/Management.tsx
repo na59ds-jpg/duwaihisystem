@@ -50,6 +50,7 @@ export function Management() {
     else if (activeFilter === "security_control") setActiveSystem("security_control");
     else if (activeFilter === "accounts_audit") setActiveSystem("accounts_audit");
     else if (activeFilter === "communications") setActiveSystem("communications");
+    else if (activeFilter === "service_requests") setActiveSystem("service_requests");
     else setActiveSystem("main");
     setActiveSubView("list");
   }, [activeFilter]);
@@ -166,8 +167,8 @@ export function Management() {
           <AdminCard icon="🏗️" title="إدارة المقاولين" desc="Vendor Management" onClick={() => setActiveSystem('contractors')} theme={theme} />
           <AdminCard icon="🛡️" title="التحكم الأمني" desc="Gate & Field Control" onClick={() => setActiveSystem('security_control')} theme={theme} />
           <AdminCard icon="📢" title="لوحة التنبيهات" desc="Communication Center" onClick={() => setActiveSystem('communications')} theme={theme} />
-          <AdminCard icon="📂" title="طلبات الخدمة" desc="Service Requests" onClick={() => setActiveSystem('service_requests')} theme={theme} />
-          <AdminCard icon="👑" title="رقابة الحسابات" desc="Portal Accounts Audit" onClick={() => setActiveSystem('accounts_audit')} theme={theme} featured />
+          <AdminCard icon="📂" title="طلبات الخدمة" desc="Service Requests" onClick={() => setActiveSystem('service_requests')} theme={theme} featured />
+          <AdminCard icon="👑" title="رقابة الحسابات" desc="Portal Accounts Audit" onClick={() => setActiveSystem('accounts_audit')} theme={theme} />
         </div>
       )}
 
@@ -253,7 +254,7 @@ export function Management() {
             </div>
             <div className="grid grid-cols-1 gap-3 max-h-[400px] overflow-y-auto pr-2">
               {securityGates.map(g => (
-                <div key={g.id} className="p-6 rounded-2xl border border-white/5 flex justify-between items-center bg-white/5">
+                <div key={g.id} className={`p-6 rounded-2xl border border-white/5 flex justify-between items-center ${isDark ? 'bg-white/5' : 'bg-zinc-50 border-zinc-100 shadow-sm'}`}>
                   <span className={`font-[900] text-sm uppercase ${isDark ? 'text-white' : 'text-zinc-900'}`}>{g.nameAr}</span>
                   <button onClick={() => deleteDoc(doc(db, "security_gates", g.id))} className="w-10 h-10 rounded-xl bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white transition-all flex items-center justify-center font-black">✕</button>
                 </div>
@@ -279,7 +280,7 @@ export function Management() {
             </div>
             <div className="space-y-3 overflow-y-auto max-h-[500px]">
               {staff.map(u => (
-                <div key={u.id} className="p-5 rounded-2xl border border-white/5 flex justify-between items-center bg-white/5">
+                <div key={u.id} className={`p-5 rounded-2xl border border-white/5 flex justify-between items-center ${isDark ? 'bg-white/5' : 'bg-zinc-50 border-zinc-100 shadow-sm'}`}>
                   <span className={`font-[900] text-sm uppercase ${isDark ? 'text-white' : 'text-zinc-900'}`}>{u.name} ({u.empId})</span>
                   <button onClick={async () => { if (confirm("Confirm?")) await deleteDoc(doc(db, "employees_accounts", u.id)); }} className="w-10 h-10 rounded-xl bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white transition-all flex items-center justify-center font-black">✕</button>
                 </div>
