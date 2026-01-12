@@ -216,9 +216,12 @@ export function Login() {
 
         {/* 4. Service Grid (6 Cards) */}
         <div className="w-full mb-12">
-          <h3 className="text-center text-2xl font-black mb-8 text-[var(--royal-gold)] tracking-widest uppercase relative inline-block w-full">
-            <span className="bg-[var(--marble-white)] px-6 relative z-10">{isRTL ? "الخدمات الإلكترونية" : "E-Services"}</span>
-            <div className="absolute top-1/2 left-0 w-full h-px bg-[var(--royal-gold)]/30 -z-0"></div>
+          {/* التعديل الجمالي 3D وإزالة الخلفية البيضاء هنا */}
+          <h3 className="text-center text-3xl font-black mb-10 text-[var(--royal-gold)] tracking-[0.3em] uppercase relative py-4">
+            <span className="relative z-10 drop-shadow-[0_5px_15px_rgba(196,182,135,0.6)]">
+              {isRTL ? "الخدمات الإلكترونية" : "E-Services"}
+            </span>
+            <div className="absolute top-1/2 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[var(--royal-gold)]/40 to-transparent -z-0"></div>
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -247,7 +250,7 @@ export function Login() {
               title="Contractor Private Vehicle"
               titleAr="مركبة مقاول (خاصة)"
               icon={<IconCarPlus />}
-              onClick={() => handleOpenService('private_vehicle')} // Assuming same form, diff logic handled in modal or subsequent selection
+              onClick={() => handleOpenService('private_vehicle')}
             />
             <ServiceCard
               title="Contractor Company Vehicle"
