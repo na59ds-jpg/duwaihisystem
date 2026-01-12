@@ -16,12 +16,12 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
     const [loading, setLoading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState("");
 
-    // Updated field names: natId -> idNumber
+    // Updated: Unified Field Names & Arabized Form
     const [formData, setFormData] = useState<any>({
         requestType: 'new',
         fullNameAr: '', fullNameEn: '',
         empId: '', title: '', grade: '',
-        nationality: '', dob: '', idNumber: '', // Unified Field Name
+        nationality: 'السعودية', dob: '', idNumber: '', // Unified Field: idNumber
         placeOfBirth: '', bloodGroup: '',
         mobile: '',
         dept: '', section: '',
@@ -57,9 +57,16 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
         setLoading(true);
         setUploadProgress("جاري التحقق...");
 
+        // Basic Validation
+        if (!formData.fullNameAr || !formData.idNumber || !formData.mobile) {
+            alert("يرجى تعبئة الحقول الأساسية (الاسم، رقم الهوية، الجوال)");
+            setLoading(false);
+            return;
+        }
+
         const missingFiles = config.requiredFiles.filter(key => !files[key]);
         if (missingFiles.length > 0) {
-            alert(`المستندات المطلوبة ناقصة: \n ${missingFiles.join(', ')}`);
+            alert(`المستندات المطلوبة ناقصة: \n ${missingFiles.map(k => formatAttachmentName(k)).join(', ')}`);
             setLoading(false);
             return;
         }
@@ -91,7 +98,6 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
             for (const key of Object.keys(files)) {
                 if (files[key]) {
                     try {
-                        console.log(`Uploading ${key}...`);
                         const url = await uploadToCloudinary(files[key]!);
                         attachments[key] = url;
                     } catch (uploadErr) {
@@ -105,7 +111,6 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
                 attachments,
                 status: "pending"
             });
-            console.log("Document updated with attachments.");
 
             alert(`✅ تم إرسال الطلب بنجاح! \n رقم الطلب: ${uniqueId}`);
             onClose();
@@ -129,7 +134,7 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
             let q = query(collection(db, "security_requests"), where("requestId", "==", searchQuery.trim()));
             let snap = await getDocs(q);
             if (snap.empty) {
-                // Unified Field Search
+                // Unified Field Search: idNumber
                 q = query(collection(db, "security_requests"), where("idNumber", "==", searchQuery.trim()));
                 snap = await getDocs(q);
             }
@@ -137,7 +142,7 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
             else alert("لم يتم العثور على أي طلب بهذا الرقم");
         } catch (err) {
             console.error("Search Error:", err);
-            alert("حدث خطأ أثناء البحث، يرجى المحاولة لاحقاً");
+            alert("حدث خطأ أثناء البحث");
         }
         setSearchLoading(false);
     };
@@ -183,6 +188,10 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
                                 <div className="w-full p-8 rounded-[2rem] border border-white/10 bg-white/5 text-center">
                                     <h2 className="text-2xl font-black text-white mb-2">{searchResult.status}</h2>
                                     <p className="text-zinc-400">رقم الطلب: {searchResult.requestId}</p>
+                                    <div className="flex flex-col gap-2 mt-4 text-sm text-zinc-300">
+                                        <span>👤 {searchResult.fullNameAr}</span>
+                                        <span>🆔 {searchResult.idNumber}</span>
+                                    </div>
                                     <button onClick={() => setSearchResult(null)} className="mt-6 text-[#C4B687] underline">بحث آخر</button>
                                 </div>
                             )}
@@ -200,8 +209,8 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
 
                             <SectionTitle title="البيانات الشخصية / Personal Information" />
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-white">
-                                <Input label="الاسم الكامل (En)" value={formData.fullNameEn} onChange={(e: any) => setFormData({ ...formData, fullNameEn: e.target.value })} required dir="ltr" />
-                                <Input label="الاسم الكامل (عربي)" value={formData.fullNameAr} onChange={(e: any) => setFormData({ ...formData, fullNameAr: e.target.value })} dir="rtl" required />
+                                <Input label="الاسم الكامل (انجليزي)" value={formData.fullNameEn} onChange={(e: any) => setFormData({ ...formData, fullNameEn: e.target.value })} required dir="ltr" />
+                                <Input label="الاسم الكامل (عربي)" value={formData.fullNameAr} onChange={(e: any) => setFormData({ ...formData, fullNameAr: e.target.value })} required />
                                 <Input label="رقم الهوية / الإقامة" value={formData.idNumber} onChange={(e: any) => setFormData({ ...formData, idNumber: e.target.value })} required />
                                 <Input label="الرقم الوظيفي" value={formData.empId} onChange={(e: any) => setFormData({ ...formData, empId: e.target.value })} required />
                                 <Input label="المسمى الوظيفي" value={formData.title} onChange={(e: any) => setFormData({ ...formData, title: e.target.value })} required />

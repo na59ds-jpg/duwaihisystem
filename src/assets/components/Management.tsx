@@ -13,6 +13,7 @@ import {
 } from "firebase/firestore";
 import { useApp } from "../../App";
 import { GatePass } from "./GatePass";
+import { RequestsManager } from "./RequestsManager";
 import * as XLSX from 'xlsx';
 
 /**
@@ -189,9 +190,13 @@ export function Management() {
           <AdminCard icon="🏗️" title="إدارة المقاولين" desc="Vendor Management" onClick={() => setActiveSystem('contractors')} theme={theme} />
           <AdminCard icon="🛡️" title="التحكم الأمني" desc="Gate & Field Control" onClick={() => setActiveSystem('security_control')} theme={theme} />
           <AdminCard icon="📢" title="لوحة التنبيهات" desc="Communication Center" onClick={() => setActiveSystem('communications')} theme={theme} />
+          <AdminCard icon="📂" title="طلبات الخدمة" desc="Service Requests" onClick={() => setActiveSystem('service_requests')} theme={theme} />
           <AdminCard icon="👑" title="رقابة الحسابات" desc="Portal Accounts Audit" onClick={() => setActiveSystem('accounts_audit')} theme={theme} featured />
         </div>
       )}
+
+      {/* 0. إدارة طلبات الخدمة */}
+      {activeSystem === "service_requests" && <RequestsManager onBack={() => setActiveSystem('main')} />}
 
       {/* 1. رقابة الحسابات (جدول البحث المدمج) */}
       {activeSystem === "accounts_audit" && (
