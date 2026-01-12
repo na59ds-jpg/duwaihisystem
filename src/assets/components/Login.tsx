@@ -64,18 +64,29 @@ export function Login() {
     e.preventDefault(); setLoading(true); setError("");
 
     try {
-      const adminUser = adminCreds.user;
-      const adminPass = adminCreds.pass;
-      const adminPin = vipPin;
-      const inputPin = username.trim();
-      const systemPin = String(adminPin).trim();
+      // جلب الإعدادات الحالية من قاعدة البيانات قبل التحقق لضمان عمل الـ PIN الجديد
+      const configSnap = await getDoc(doc(db, "system_settings", "config"));
+      let currentVipPin = vipPin;
+      let currentAdminUser = adminCreds.user;
+      let currentAdminPass = adminCreds.pass;
 
+      if (configSnap.exists()) {
+        const cfg = configSnap.data();
+        currentVipPin = cfg.vip_pin || vipPin;
+        currentAdminUser = cfg.username || adminCreds.user;
+        currentAdminPass = cfg.password || adminCreds.pass;
+      }
+
+      const inputPin = username.trim();
+      const systemPin = String(currentVipPin).trim();
+
+      // --- تفعيل الدخول السريع (التحقق من PIN) ---
       if (inputPin === systemPin) {
         const adminSession: User = {
           id: "admin_vip",
           name: "نواف الجعيد",
           role: "Admin",
-          username: adminUser,
+          username: currentAdminUser,
           isPersistent: true
         };
         localStorage.setItem("maaden_session", JSON.stringify(adminSession));
@@ -84,8 +95,9 @@ export function Login() {
         return;
       }
 
-      if (username === adminUser && password === adminPass) {
-        const admin: User = { id: "admin_standard", name: "نواف الجعيد", role: "Admin", username: adminUser };
+      // --- الدخول التقليدي (اليوزر والباسوورد) ---
+      if (username === currentAdminUser && password === currentAdminPass) {
+        const admin: User = { id: "admin_standard", name: "نواف الجعيد", role: "Admin", username: currentAdminUser };
         localStorage.setItem("maaden_session", JSON.stringify(admin));
         setUser(admin);
         setLoading(false);
