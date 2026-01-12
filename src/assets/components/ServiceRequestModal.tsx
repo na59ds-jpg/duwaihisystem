@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { db } from '../../firebase';
-import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs, updateDoc, doc } from 'firebase/firestore';
 import { uploadToCloudinary } from '../../utils/cloudinary';
 import { generateOfficialPDF } from '../../utils/pdfGenerator';
 import type { StructureItem } from '../../types';
@@ -15,7 +15,8 @@ interface ServiceRequestModalProps {
 
 export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, onClose, departments, companies }) => {
     const [loading, setLoading] = useState(false);
-    const [isGeneratingPdf, setIsGeneratingPdf] = useState(false); // New state for layer isolation
+    const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState("");
 
     const [formData, setFormData] = useState<any>({
         requestType: 'new',
@@ -36,7 +37,6 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
         driverLicense: null, vehicleReg: null, insurance: null,
     });
 
-    // --- Configuration ---
     const getConfig = () => {
         switch (type) {
             case 'employee_card':
@@ -54,10 +54,11 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
         if (e.target.files && e.target.files[0]) setFiles({ ...files, [key]: e.target.files[0] });
     };
 
-    // --- Updated Submit Logic ---
+    // --- TEXT-FIRST SUBMISSION STRATEGY ---
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
+        setUploadProgress("Validating...");
 
         const missingFiles = config.requiredFiles.filter(key => !files[key]);
         if (missingFiles.length > 0) {
@@ -67,51 +68,77 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
         }
 
         try {
-            // 1. Upload Files
-            const attachments: any = {};
-            for (const key of Object.keys(files)) {
-                if (files[key]) attachments[key] = await uploadToCloudinary(files[key]!);
-            }
-
-            // 2. Generate ID
+            // 1. Generate ID & Prepare Initial Payload
             const uniqueId = `MS-${Math.floor(1000 + Math.random() * 9000)}`;
+            const submissionDate = new Date().toISOString();
 
-            // 3. Prepare Payload (Remove undefined)
             const payload = {
                 type,
                 requestId: uniqueId,
                 ...formData,
-                attachments,
-                status: "pending",
+                status: "uploading", // STATUS indicates uploads are in progress
                 createdAt: serverTimestamp(),
-                submittedAt: new Date().toISOString(),
+                submittedAt: submissionDate,
+                attachments: {}, // Empty initially
             };
-            // Clean undefined
+            // Clean undefined values
             Object.keys(payload).forEach(key => payload[key] === undefined && delete payload[key]);
 
-            // 4. Save to Firestore
-            await addDoc(collection(db, "security_requests"), payload);
+            setUploadProgress("Saving Data...");
+            console.log("Creating document in 'security_requests' table...", payload);
 
-            // 5. Layer Isolation & PDF Generation
-            alert(`Request Submitted Successfully! ID: ${uniqueId} \n جارٍ إعداد نموذج الطباعة...`);
+            // Create Document FIRST (Async Safety)
+            const docRef = await addDoc(collection(db, "security_requests"), payload);
+            console.log("Document created successfully with ID:", docRef.id);
 
-            // Switch mode: Hide Form, Show PDF Template (visually hidden but rendered)
+            // 2. Upload Files
+            setUploadProgress("Uploading Files...");
+            const attachments: any = {};
+
+            for (const key of Object.keys(files)) {
+                if (files[key]) {
+                    try {
+                        console.log(`Uploading ${key}...`);
+                        const url = await uploadToCloudinary(files[key]!);
+                        attachments[key] = url;
+                    } catch (uploadErr) {
+                        console.error(`Failed to upload ${key}:`, uploadErr);
+                        // Continue even if one fails
+                    }
+                }
+            }
+
+            // 3. Update Document with Attachments
+            setUploadProgress("Finalizing...");
+            await updateDoc(doc(db, "security_requests", docRef.id), {
+                attachments,
+                status: "pending"
+            });
+            console.log("Document updated with attachments.");
+
+            // 4. PDF Generation & Close
+            // LAYER ISOLATION: Hide Form Immediately
             setFormData((prev: any) => ({ ...prev, generatedId: uniqueId }));
-            setIsGeneratingPdf(true);
+            setIsGeneratingPdf(true); // This triggers the UI switch
+            setLoading(false);
 
-            // Allow DOM to update
-            await new Promise(r => setTimeout(r, 1000));
+            alert(`✅ Request Submitted Successfully! \n ID: ${uniqueId}`);
+
+            // Tiny delay to ensure React renders the hidden PDF template with new ID
+            await new Promise(r => setTimeout(r, 800));
 
             await generateOfficialPDF("official-form-view", `Request_${uniqueId}`);
 
-            onClose(); // Close EVERYTHING now
+            console.log("PDF Generated. closing modal.");
+            onClose();
 
-        } catch (err) {
-            console.error("Submission Error:", err);
-            alert("Error submitting request / حدث خطأ أثناء تقديم الطلب");
+        } catch (err: any) {
+            console.error("CRITICAL SUBMISSION ERROR:", err);
+            // REAL Error Message to User
+            alert(`❌ Error Submitting Request: \n ${err.message || JSON.stringify(err)} \n Check Console for details.`);
+            setLoading(false);
+            setIsGeneratingPdf(false);
         }
-        setLoading(false);
-        setIsGeneratingPdf(false);
     };
 
     // --- Search Logic ---
@@ -131,18 +158,15 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
             }
             if (!snap.empty) setSearchResult({ id: snap.docs[0].id, ...snap.docs[0].data() });
             else alert("No request found / لم يتم العثور على طلب");
-        } catch (err) { alert("Error searching / حدث خطأ في البحث"); }
+        } catch (err) {
+            console.error("Search Error:", err);
+            alert("Error searching / حدث خطأ في البحث");
+        }
         setSearchLoading(false);
     };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-[10px] p-4 font-['Tajawal']">
-            {/* 
-                LAYER ISOLATION STRATEGY: 
-                If isGeneratingPdf is true, we hide the modal UI completely 
-                but keep the DOM mounted so the PDF generator template (which is also in this DOM) 
-                can be captured. 
-            */}
 
             {!isGeneratingPdf && (
                 <div className="w-full max-w-4xl rounded-[2.5rem] relative flex flex-col max-h-[90vh] overflow-hidden border border-[var(--royal-gold)]/30 animate-in zoom-in-95 duration-500 glass-card bg-zinc-900/95 shadow-[0_20px_60px_rgba(0,0,0,0.5)]">
@@ -161,8 +185,17 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
 
                     {/* Content */}
                     <div className="flex-1 overflow-y-auto p-8 relative custom-scrollbar">
+                        {/* Overlay for Loading Text */}
+                        {loading && (
+                            <div className="absolute inset-0 z-[60] bg-black/80 flex flex-col items-center justify-center text-white backdrop-blur-sm">
+                                <span className="text-4xl animate-bounce mb-4">🚀</span>
+                                <h3 className="text-xl font-black text-[#C4B687]">{uploadProgress || "Processing..."}</h3>
+                                <p className="text-xs text-zinc-400 mt-2">Please do not close this window...</p>
+                            </div>
+                        )}
+
                         {type === 'inquiry' ? (
-                            <div className="flex flex-col items-center justify-center min-h-[400px] w-full max-w-2xl mx-auto space-y-8"> // Inquiry UI
+                            <div className="flex flex-col items-center justify-center min-h-[400px] w-full max-w-2xl mx-auto space-y-8">
                                 {!searchResult ? (
                                     <form onSubmit={handleSearch} className="w-full flex gap-4 flex-col items-center">
                                         <div className="text-center space-y-2 mb-4">
@@ -246,7 +279,7 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
                                 <div className="flex justify-end gap-4 pt-6 border-t border-white/10">
                                     <button type="button" onClick={onClose} className="px-8 py-3 font-bold text-zinc-500 hover:text-white transition-colors">Cancel</button>
                                     <button type="submit" disabled={loading} className="px-10 py-3 bg-[var(--royal-gold)] text-black font-black text-sm uppercase rounded-xl hover:scale-105 transition-all shadow-[0_0_20px_rgba(196,182,135,0.4)] disabled:opacity-50">
-                                        {loading ? "Processing..." : "Submit Request"}
+                                        {loading ? (uploadProgress || "Processing...") : "Submit Request"}
                                     </button>
                                 </div>
                             </form>
@@ -255,14 +288,9 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
                 </div>
             )}
 
-            {/* 
-                OFFICIAL PDF TEMPLATE (Always in DOM, Hidden from User, Visible to html2canvas)
-                We use strict CSS to ensure it renders correctly for the screenshot.
-            */}
+            {/* A4 Template (Hidden) */}
             <div style={{ position: 'fixed', top: '-10000px', left: '-10000px' }}>
                 <div id="official-form-view" className="bg-white text-black font-serif relative" style={{ width: '210mm', minHeight: '297mm', padding: '20mm' }}>
-
-                    {/* Header */}
                     <div className="flex justify-between items-end border-b-4 border-[#C4B687] pb-6 mb-10">
                         <div>
                             <h1 className="text-3xl font-bold text-[#C4B687] uppercase tracking-widest leading-none">MAADEN</h1>
@@ -274,13 +302,11 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
                         </div>
                     </div>
 
-                    {/* Title & Meta */}
                     <div className="text-center mb-12 bg-zinc-50 py-4 border-y border-zinc-200">
                         <h2 className="text-2xl font-black uppercase text-black mb-1">{config.title}</h2>
                         <p className="text-sm text-zinc-500 font-mono">REF: <span className="text-black font-bold">{formData.generatedId || "Generating..."}</span></p>
                     </div>
 
-                    {/* Data Table */}
                     <div className="mb-10">
                         <h3 className="text-sm font-bold uppercase border-b border-black mb-4 pb-1">Applicant Details / بيانات مقدم الطلب</h3>
                         <table className="w-full text-sm border-collapse">
@@ -299,7 +325,6 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
                         </table>
                     </div>
 
-                    {/* Footer / Stamps */}
                     <div className="absolute bottom-20 left-20 right-20 flex justify-between items-end">
                         <div className="text-center">
                             <p className="text-xs font-bold text-zinc-400 mb-4 uppercase tracking-widest">Applicant Signature</p>
@@ -327,7 +352,6 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ type, 
     );
 };
 
-// --- Subcomponents ---
 const SectionTitle = ({ title }: { title: string }) => (
     <div className="flex items-center gap-4 py-4 border-b border-white/10 mb-4 mt-6">
         <div className="h-1.5 w-10 bg-[var(--royal-gold)] rounded-full"></div>
