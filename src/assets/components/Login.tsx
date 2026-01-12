@@ -216,12 +216,12 @@ export function Login() {
 
         {/* 4. Service Grid (6 Cards) */}
         <div className="w-full mb-12">
-          {/* التعديل الجمالي 3D وإزالة الخلفية البيضاء هنا */}
+          {/* تم إزالة الخلفية البيضاء وجعل الجملة 3D بظلال عميقة ودون تداخل لوني */}
           <h3 className="text-center text-3xl font-black mb-10 text-[var(--royal-gold)] tracking-[0.3em] uppercase relative py-4">
-            <span className="relative z-10 drop-shadow-[0_5px_15px_rgba(196,182,135,0.6)]">
+            <span className="relative z-10 drop-shadow-[0_4px_8px_rgba(196,182,135,0.8)] filter">
               {isRTL ? "الخدمات الإلكترونية" : "E-Services"}
             </span>
-            <div className="absolute top-1/2 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[var(--royal-gold)]/40 to-transparent -z-0"></div>
+            <div className="absolute top-1/2 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[var(--royal-gold)]/30 to-transparent -z-0"></div>
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
