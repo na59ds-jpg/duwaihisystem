@@ -90,7 +90,7 @@ export function Dashboard() {
       {/* هيدر القيادة والسيطرة الملكي */}
       <div className={`p-8 rounded-[2.5rem] flex flex-col md:flex-row justify-between items-center border shadow-2xl backdrop-blur-xl transition-all ${isDark ? 'bg-black/40 border-white/5 shadow-black' : 'bg-white border-zinc-200 shadow-xl'}`}>
         <div className={isRTL ? "text-right" : "text-left"}>
-          <h2 className="text-3xl md:text-4xl font-black text-[#C4B687] tracking-tighter">{isRTL ? 'مركز القيادة والسيطرة الاستراتيجي' : 'Strategic Command Center'}</h2>
+          <h2 className="text-3xl md:text-4xl font-black text-[#C4B687] tracking-tighter">{isRTL ? 'مركز القيادة والسيطرة بمنجم الدويحي' : 'Strategic Command Center'}</h2>
           <p className="text-[10px] font-black opacity-40 uppercase tracking-[0.4em] mt-1 text-[#C4B687]">Maaden Ad Duwaihi Mine - Operational Authority</p>
         </div>
         <div className={`mt-4 md:mt-0 p-4 px-10 rounded-3xl border shadow-inner ${isDark ? 'bg-white/5 border-white/5' : 'bg-zinc-50 border-zinc-100'}`}>

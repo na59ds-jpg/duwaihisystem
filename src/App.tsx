@@ -66,10 +66,10 @@ const App: React.FC = () => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [securityForm, setSecurityForm] = useState({ username: "", password: "", pin: "" });
-  // Removed unused avatarFile state
   const [adminAvatar, setAdminAvatar] = useState(""); // State for global avatar URL
 
   // Load Settings from Firestore on Mount (and when modal opens)
+  // هذا الجزء هو المسؤول عن مزامنة بيانات "الدخول السريع" مع النظام
   useEffect(() => {
     const fetchSettings = async () => {
       try {
@@ -80,7 +80,7 @@ const App: React.FC = () => {
           setSecurityForm({
             username: data.username || "",
             password: data.password || "",
-            pin: data.vip_pin || ""
+            pin: data.vip_pin || "" // ربط الـ PIN المحدث بخاصية الدخول السريع
           });
           setAdminAvatar(data.avatar || "");
         }
@@ -93,13 +93,13 @@ const App: React.FC = () => {
 
   const handleSaveSecurity = async () => {
     try {
-      const avatarUrl = adminAvatar; // No file upload in this context for now
-      // Logic for file upload removed to fix TS6133 as per user request (or fixed elsewhere)
+      const avatarUrl = adminAvatar;
 
+      // حفظ الإعدادات في Firebase لتكون متاحة فوراً لصفحة الـ Login (الدخول السريع)
       await setDoc(doc(db, "system_settings", "config"), {
         username: securityForm.username,
         password: securityForm.password,
-        vip_pin: securityForm.pin,
+        vip_pin: securityForm.pin, // تحديث الـ PIN للسماح بالدخول السريع الجديد
         avatar: avatarUrl
       }, { merge: true });
 
@@ -132,7 +132,6 @@ const App: React.FC = () => {
     }
   };
 
-
   // مراقبة الطلبات الجديدة للإدارة فقط (Real-time Audit Badge)
   useEffect(() => {
     if (user && user.role !== 'Employee' && user.role !== 'Gate') {
@@ -162,27 +161,22 @@ const App: React.FC = () => {
       setActiveTab(tab);
       setActiveFilter(filter || null);
     },
-    adminAvatar // Export avatar to context
+    adminAvatar
   };
 
   const isRTL = lang === 'ar';
 
   // محرك عرض المحتوى الذكي بناءً على الصلاحيات والتبويبات
   const renderContent = () => {
-    // التوجيه الإلزامي للأدوار المحددة (عزل تام للبوابات)
     if (user?.role === 'Employee') return <EmployeePortal />;
     if (user?.role === 'Gate') return <GatePortal />;
 
-    // مسارات الإدارة والقيادة
     switch (activeTab) {
       case "dashboard": return <Dashboard />;
       case "management": return <Management />;
       case "security_control": return <Management />;
-
-      // للمدير: بوابة الموظف تعرض الطلبات الواردة (تدقيق) وبوابة الأمن تعرض الفحص الميداني
       case "employee_portal": return <SupportTickets />;
       case "gate_portal": return <AccessControl />;
-
       case "users": return <UserManagement />;
       case "tickets": return <SupportTickets />;
       case "personnel": return <DepartmentManager />;
@@ -197,7 +191,6 @@ const App: React.FC = () => {
   return (
     <AppContext.Provider value={contextValue}>
       <div className={`min-h-screen relative transition-colors duration-700 ${theme === 'dark' ? 'bg-black text-white' : 'bg-[#F8FAFC] text-zinc-900'}`}>
-        {/* خلفية النظام الإستراتيجية */}
         <div
           className="fixed inset-0 z-0 pointer-events-none opacity-40"
           style={{ backgroundImage: "url('/bg.jpg')", backgroundSize: 'cover', backgroundPosition: 'center' }}
@@ -207,13 +200,11 @@ const App: React.FC = () => {
             <Login />
           ) : (
             <div className="flex h-screen overflow-hidden" dir={isRTL ? "rtl" : "ltr"}>
-              {/* شريط السايدبار للإدارة فقط */}
               {(user.role !== 'Employee' && user.role !== 'Gate') && (
                 <Sidebar activeTab={activeTab} activeFilter={activeFilter} navigateTo={contextValue.navigateTo} />
               )}
 
               <main className="flex-1 flex flex-col overflow-hidden relative">
-                {/* الهيدر العلوي للإدارة فقط */}
                 {(user.role !== 'Employee' && user.role !== 'Gate') && (
                   <header className={`h-20 border-b flex items-center justify-between px-10 z-20 backdrop-blur-xl ${theme === 'dark' ? 'bg-black/40 border-white/5' : 'bg-white/90 border-zinc-200'}`}>
                     <button onClick={() => handleSetLanguage(isRTL ? "en" : "ar")} className="px-6 py-2 rounded-xl border border-[#C4B687] text-[#C4B687] font-black text-[10px] uppercase">
@@ -221,7 +212,6 @@ const App: React.FC = () => {
                     </button>
 
                     <div className="flex items-center gap-6">
-                      {/* جرس الإشعارات للطلبات المعلقة */}
                       <div className="relative cursor-pointer" onClick={() => setActiveTab("tickets")}>
                         <span className="text-xl">🔔</span>
                         {pendingRequestsTotal > 0 && (
@@ -243,18 +233,19 @@ const App: React.FC = () => {
                             </p>
                           </div>
                           <div className="w-10 h-10 rounded-full bg-zinc-800 border-2 border-[#C4B687] flex items-center justify-center overflow-hidden shadow-lg">
-                            {/* Placeholder Image or User Initial */}
-                            <span className="text-xs font-black text-[#C4B687]">
-                              {user.name ? user.name.charAt(0).toUpperCase() : "A"}
-                            </span>
+                            {/* عرض الصورة الشخصية المحملة من Cloudinary أو الحرف الأول */}
+                            {adminAvatar ? (
+                              <img src={adminAvatar} alt="Profile" className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-xs font-black text-[#C4B687]">
+                                {user.name ? user.name.charAt(0).toUpperCase() : "A"}
+                              </span>
+                            )}
                           </div>
                         </button>
 
-                        {/* Dropdown Menu */}
                         {showProfileMenu && (
                           <div className={`absolute top-full mt-2 w-56 rounded-2xl border shadow-2xl overflow-hidden py-2 z-50 ${theme === 'dark' ? 'bg-black border-white/10' : 'bg-white border-zinc-200'} ${isRTL ? 'left-0' : 'right-0'}`}>
-
-                            {/* Account Settings Option (Admin Only) */}
                             {(user.role === 'Admin' || user.username === 'admin') && (
                               <button
                                 onClick={() => { setShowSettingsModal(true); setShowProfileMenu(false); }}
@@ -263,9 +254,7 @@ const App: React.FC = () => {
                                 <span>⚙️</span> {isRTL ? "إعدادات الحساب" : "Account Settings"}
                               </button>
                             )}
-
                             <div className="h-px bg-white/10 my-1 mx-4"></div>
-
                             <button
                               onClick={() => handleSetUser(null)}
                               className={`w-full text-start px-6 py-3 text-xs font-bold transition-all flex items-center gap-3 text-red-500 hover:bg-red-500/10`}
@@ -279,7 +268,6 @@ const App: React.FC = () => {
                   </header>
                 )}
 
-                {/* منطقة عرض المحتوى الرئيسية */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar">
                   <div className={`${(user.role === 'Employee' || user.role === 'Gate') ? '' : 'p-8 max-w-[1600px] mx-auto'} animate-view`}>
                     {renderContent()}
@@ -329,7 +317,6 @@ const App: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Credentials */}
                 <div className={`p-6 rounded-[2rem] border ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-zinc-50 border-zinc-200'}`}>
                   <h4 className={`text-sm font-black mb-4 ${theme === 'dark' ? 'text-white' : 'text-zinc-900'}`}>{isRTL ? "بيانات الدخول (Local)" : "Login Credentials"}</h4>
                   <div className="space-y-3">
@@ -349,7 +336,6 @@ const App: React.FC = () => {
                   </div>
                 </div>
 
-                {/* VIP PIN */}
                 <div className={`p-6 rounded-[2rem] border ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-zinc-50 border-zinc-200'}`}>
                   <h4 className={`text-sm font-black mb-4 ${theme === 'dark' ? 'text-white' : 'text-zinc-900'}`}>{isRTL ? "الرمز السريع (VIP PIN)" : "VIP Quick Access"}</h4>
                   <div className="space-y-3 text-center">

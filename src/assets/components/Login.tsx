@@ -61,10 +61,12 @@ export function Login() {
   };
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault(); setLoading(true); setError("");
+    e.preventDefault();
+    setLoading(true);
+    setError("");
 
     try {
-      // جلب الإعدادات الحالية من قاعدة البيانات قبل التحقق لضمان عمل الـ PIN الجديد
+      // جلب أحدث الإعدادات من قاعدة البيانات لضمان تزامن الـ PIN المحدث
       const configSnap = await getDoc(doc(db, "system_settings", "config"));
       let currentVipPin = vipPin;
       let currentAdminUser = adminCreds.user;
@@ -77,11 +79,11 @@ export function Login() {
         currentAdminPass = cfg.password || adminCreds.pass;
       }
 
-      const inputPin = username.trim();
+      const inputVal = username.trim();
       const systemPin = String(currentVipPin).trim();
 
-      // --- تفعيل الدخول السريع (التحقق من PIN) ---
-      if (inputPin === systemPin) {
+      // --- [تفعيل الدخول السريع]: التحقق من VIP PIN ---
+      if (inputVal === systemPin) {
         const adminSession: User = {
           id: "admin_vip",
           name: "نواف الجعيد",
@@ -95,8 +97,8 @@ export function Login() {
         return;
       }
 
-      // --- الدخول التقليدي (اليوزر والباسوورد) ---
-      if (username === currentAdminUser && password === currentAdminPass) {
+      // --- الدخول التقليدي (يوزر وباسوورد المسؤول) ---
+      if (inputVal === currentAdminUser && password === currentAdminPass) {
         const admin: User = { id: "admin_standard", name: "نواف الجعيد", role: "Admin", username: currentAdminUser };
         localStorage.setItem("maaden_session", JSON.stringify(admin));
         setUser(admin);
@@ -104,7 +106,8 @@ export function Login() {
         return;
       }
 
-      const q = query(collection(db, "users"), where("username", "==", username.trim()));
+      // --- دخول مستخدمي لوحة التحكم الآخرين ---
+      const q = query(collection(db, "users"), where("username", "==", inputVal));
       const userSnap = await getDocs(q);
 
       if (!userSnap.empty) {
@@ -203,12 +206,10 @@ export function Login() {
       {/* Main Content */}
       <main className="flex-1 w-full max-w-[1400px] mx-auto pt-8 px-6 flex flex-col items-center">
 
-        {/* 2. Alerts Slider */}
         <div className="w-full mb-8">
           <AlertsSlider lang={language} />
         </div>
 
-        {/* 3. Command & Security (Admin & Gate) */}
         <div className="w-full grid grid-cols-2 gap-6 mb-12 max-w-3xl">
           <MenuCard
             icon="👑"
@@ -226,9 +227,7 @@ export function Login() {
           />
         </div>
 
-        {/* 4. Service Grid (6 Cards) */}
         <div className="w-full mb-12">
-          {/* تم إزالة الخلفية البيضاء وجعل الجملة 3D بظلال عميقة ودون تداخل لوني */}
           <h3 className="text-center text-3xl font-black mb-10 text-[var(--royal-gold)] tracking-[0.3em] uppercase relative py-4">
             <span className="relative z-10 drop-shadow-[0_4px_8px_rgba(196,182,135,0.8)] filter">
               {isRTL ? "الخدمات الإلكترونية" : "E-Services"}
@@ -237,7 +236,6 @@ export function Login() {
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Employee Services */}
             <ServiceCard
               title="Employee Private Vehicle"
               titleAr="مركبة موظف (خاصة)"
@@ -256,8 +254,6 @@ export function Login() {
               icon={<IconBadge />}
               onClick={() => handleOpenService('employee_card')}
             />
-
-            {/* Contractor Services */}
             <ServiceCard
               title="Contractor Private Vehicle"
               titleAr="مركبة مقاول (خاصة)"
@@ -279,7 +275,6 @@ export function Login() {
           </div>
         </div>
 
-        {/* 5. Inquiry Center Button */}
         <div className="mb-12">
           <button
             onClick={() => handleOpenService('inquiry')}
@@ -295,10 +290,8 @@ export function Login() {
 
       </main>
 
-      {/* 6. Footer */}
       <Footer lang={language} />
 
-      {/* Modals (Login & Service) */}
       {showServiceModal && (
         <ServiceRequestModal
           type={serviceType}
@@ -314,7 +307,6 @@ export function Login() {
           <div className="relative w-full max-w-md">
             <button onClick={() => setView('main')} className="absolute -top-12 right-0 text-zinc-400 hover:text-red-500 text-3xl font-black transition-colors">&times;</button>
             <div className={`p-10 rounded-[2.5rem] border border-[var(--royal-gold)]/30 shadow-[0_20px_60px_rgba(0,0,0,0.1)] bg-white/40 backdrop-blur-md relative overflow-hidden glass-card`}>
-              {/* Decorative Header Bar */}
               <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-[var(--royal-gold)] to-[#A3966D] shadow-[0_0_15px_rgba(196,182,135,0.6)]"></div>
 
               <h3 className="text-2xl font-black text-center text-[var(--text-main)] mb-2 uppercase tracking-tight flex flex-col items-center gap-2">
@@ -325,7 +317,7 @@ export function Login() {
 
               <form onSubmit={view === 'admin' ? handleLogin : handleEmployeeLogin} className="space-y-5">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-zinc-500 uppercase ml-2">{view === 'admin' ? (isRTL ? "اسم المستخدم" : "Username") : (isRTL ? "الرقم الوظيفي" : "Emp ID")}</label>
+                  <label className="text-[10px] font-black text-zinc-500 uppercase ml-2">{view === 'admin' ? (isRTL ? "اسم المستخدم أو الرمز السريع" : "Username or VIP PIN") : (isRTL ? "الرقم الوظيفي" : "Emp ID")}</label>
                   <InputBox
                     placeholder=""
                     value={view === 'admin' ? username : empIdLogin}
@@ -414,7 +406,7 @@ export function Login() {
   );
 }
 
-// Minimalist Gold Icons (Inline SVGs)
+// Icons & Helper Components
 const IconCar = () => (
   <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8 text-[var(--royal-gold)]" stroke="currentColor" strokeWidth="1.5">
     <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l2-2m0 0l2-2 2 2m-2-2v10m9 4h2a2 2 0 002-2v-3a2 2 0 00-2-2h-3l-2.5-3.5H8.5L6 11H4a2 2 0 00-2 2v3a2 2 0 002 2h2m10 0v-4" />
